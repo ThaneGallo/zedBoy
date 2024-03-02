@@ -4,7 +4,7 @@ For our project, we plan to develop a straightforward Snake game on the ZedBoard
 
 # System Diagram
 
-[System Diagram](System Diagram.png)
+![System Diagram](<System Diagram.png>)
 
 # Members and Responsibilities
 
@@ -14,7 +14,7 @@ Will focus on …
 
 Thane Gallo (gallo.th@northeastern.edu) and Sym Cunningham (sym.cunningham@gmail.com)
 
-Will focus on creating the kernel module (OLED.ko)  which will probe for the OLED device from the Zed-Board device tree and will create and initialize the character device for it. So the other parts of the project can interface with it and write to it.
+Will focus on creating the kernel module (OLED.ko) which will probe for the OLED device from the Zed-Board device tree and will create and initialize the character device for it. So the other parts of the project can interface with it and write to it.
 
 Dmitry Matveev (matveev.d@northeastern.edu)
 
