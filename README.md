@@ -10,7 +10,7 @@ For our project, we plan to develop a straightforward Snake game on the ZedBoard
 
 Jackob Brattke (brattke.j@northeastern.edu)
 
-Will focus on …
+Will focus on user input through buttons and interrupts, as well as other menu functions that will focus on game start, customization, and general menu functions. This work will happen in OLED.ko, where we will implement interrupts to listen for user input to direct game input/setup.
 
 Thane Gallo (gallo.th@northeastern.edu) and Sym Cunningham (sym.cunningham@gmail.com)
 
