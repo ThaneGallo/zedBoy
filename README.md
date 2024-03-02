@@ -4,7 +4,7 @@ For our project, we plan to develop a straightforward Snake game on the ZedBoard
 
 # System Diagram
 
-[System Diagram]()
+[System Diagram](System Diagram.png)
 
 # Members and Responsibilities
 
