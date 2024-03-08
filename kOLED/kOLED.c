@@ -68,42 +68,14 @@ static struct esl_oled_driver driver_data = {
     .instance_list = LIST_HEAD_INIT(driver_data.instance_list),
 };
 
-/* Utility Functions */
-
-// find instance from inode using minor number and linked list
-static struct esl_audio_instance *inode_to_instance(struct inode *i)
-{
-  struct esl_audio_instance *inst_iter;
-  unsigned int minor = iminor(i);
-
-  // start with fist element in linked list (stored at class),
-  // and iterate through its elements
-  list_for_each_entry(inst_iter, &driver_data.instance_list, inst_list)
-  {
-    // found matching minor number?
-    if (MINOR(inst_iter->devno) == minor)
-    {
-      // return instance pointer of corresponding instance
-      return inst_iter;
-    }
-  }
-
-  // not found
-  return NULL;
-}
-
-// return instance struct based on file
-static struct esl_audio_instance *file_to_instance(struct file *f)
-{
-  return inode_to_instance(f->f_path.dentry->d_inode);
-}
 
 /* Character device File Ops */
-static ssize_t esl_audio_write(struct file *f,
+static ssize_t esl_oled_write(struct file *f,
                                const char __user *buf, size_t len,
                                loff_t *offset)
 {
-  
+  ssize_t written;
+
   return written;
 }
 
@@ -119,56 +91,26 @@ static struct class esl_oled_class = {
 };
 
 /* interrupt handler */
-static irqreturn_t esl_audio_irq_handler(int irq, void *dev_id)
+static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
 {
-  struct esl_audio_instance *inst = dev_id;
-  unsigned int ISR_reg;
-
-  // Reads the interrupt status
-  ISR_reg = ioread32(inst->regs + ISR);
-
-  // Check for TX overrun interrupt
-  if (ISR_reg & (1 << TX_OVERRUN_ERR))
-  {
-    printk(KERN_WARNING "TX overrun error\n");
-    return -EINVAL;
-  }
-
-  // Check for TX size error interrupt
-  else if (ISR_reg & (1 << TX_SIZE_ERR))
-  {
-    printk(KERN_WARNING "TX size error\n");
-    return -EINVAL;
-  }
-
-  // Check for TX full interrupt
-  else if (ISR_reg & (1 << TX_EMPTY))
-  {
-    // begsins to send the TX fifo
-    wake_up();
-
-  }
-
-  // Clear the interrupt
-  iowrite32(ISR_reg, inst->regs + ISR);
-
+  struct esl_oled_instance *inst = dev_id;
+ 
   return IRQ_HANDLED;
 }
 
 static int esl_oled_probe(struct platform_device *pdev)
 {
-  struct esl_audio_instance *inst = NULL;
+  struct esl_oled_instance *inst = NULL;
   int err;
   struct resource *res;
   struct device *dev;
   const void *prop;
-  phandle i2s_phandle;
   struct device_node *i2sctl_node;
 
   dev_t devno = MKDEV(driver_data.first_devno, driver_data.instance_count);
 
   // allocate instance
-  inst = devm_kzalloc(&pdev->dev, sizeof(struct esl_audio_instance),
+  inst = devm_kzalloc(&pdev->dev, sizeof(struct esl_oled_instance),
                       GFP_KERNEL);
 
   if (!inst)
@@ -211,9 +153,9 @@ static int esl_oled_probe(struct platform_device *pdev)
   }
 
   err = devm_request_irq(&pdev->dev, res->start,
-                         esl_audio_irq_handler,
+                         esl_oled_irq_handler,
                          IRQF_TRIGGER_HIGH,
-                         "zedaudio", inst);
+                         "zedoled", inst);
   if (err < 0)
   {
     return err;
@@ -222,12 +164,6 @@ static int esl_oled_probe(struct platform_device *pdev)
   // save irq number
   inst->irqnum = res->start;
 
-  // get and inspect i2s reference
-  prop = of_get_property(pdev->dev.of_node, "esl,i2s-controller", NULL);
-  if (IS_ERR(prop))
-  {
-    return PTR_ERR(prop);
-  }
 
   // create character device
 
@@ -238,10 +174,6 @@ static int esl_oled_probe(struct platform_device *pdev)
   printk(KERN_INFO "Device probed with devno #%u", inst->devno);
   printk(KERN_INFO "Device probed with inst count #%u", driver_data.instance_count);
 
-  // initialize and create character device
-  /* dev = device_create_with_groups(&esl_audio_class, &pdev->dev,
-                                   devno, inst, esl_audio_attr_groups,
-                                   "audio%d", driver_data.instance_number); */
 
   cdev_init(&inst->chr_dev, &esl_oled_fops);
   inst->chr_dev.owner = THIS_MODULE;
@@ -255,7 +187,7 @@ static int esl_oled_probe(struct platform_device *pdev)
   printk(KERN_INFO "inst->devno minor %u", MINOR(inst->devno));
 
   // Device creation for sysfs
-  dev = device_create(driver_data.class, &pdev->dev, inst->devno, NULL, "zedaudio%d", MINOR(inst->devno));
+  dev = device_create(driver_data.class, &pdev->dev, inst->devno, NULL, "zedoled%d", MINOR(inst->devno));
   if (IS_ERR(dev))
   {
     cdev_del(&inst->chr_dev);
@@ -324,7 +256,7 @@ static int esl_oled_init(void)
   return 0;
 }
 
-static void esl_audio_exit(void)
+static void esl_oled_exit(void)
 {
 
   // free character device region

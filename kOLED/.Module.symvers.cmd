@@ -1,0 +1,1 @@
+cmd_/home/thane/projects2/prj-snake-team/kOLED/Module.symvers := sed 's/ko$$/o/' /home/thane/projects2/prj-snake-team/kOLED/modules.order | scripts/mod/modpost -m    -o /home/thane/projects2/prj-snake-team/kOLED/Module.symvers -e -i Module.symvers   -T -
