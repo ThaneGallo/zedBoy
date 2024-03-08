@@ -36,8 +36,8 @@ struct esl_oled_instance
   // interrupt number
   unsigned int irqnum;
 
-  // fifo depth
-  unsigned int tx_fifo_depth;
+  // oled fifo size
+  unsigned int fifo_size;
 
   // fifo buffer
   unsigned char fifo_buf[31];
@@ -48,7 +48,7 @@ struct esl_oled_instance
 };
 
 // matching table
-static struct of_device_id esl_audio_of_ids[] = {
+static struct of_device_id esl_oled_of_ids[] = {
     {.compatible = "xlnx,xps-spi-2.00.a"},
     {}};
 
@@ -104,8 +104,6 @@ static int esl_oled_probe(struct platform_device *pdev)
   int err;
   struct resource *res;
   struct device *dev;
-  const void *prop;
-  struct device_node *i2sctl_node;
 
   dev_t devno = MKDEV(driver_data.first_devno, driver_data.instance_count);
 
@@ -122,7 +120,7 @@ static int esl_oled_probe(struct platform_device *pdev)
   // set platform driver data
   platform_set_drvdata(pdev, inst);
 
-  // get registers (AXI FIFO)
+  // get registers
   res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
   if (IS_ERR(res))
   {
@@ -135,12 +133,12 @@ static int esl_oled_probe(struct platform_device *pdev)
     return PTR_ERR(inst->regs);
   }
 
-  // get TX fifo depth
-  err = of_property_read_u32(pdev->dev.of_node, "xlnx,tx-fifo-depth",
-                             &inst->tx_fifo_depth);
+  // get fifo depth
+  err = of_property_read_u32(pdev->dev.of_node, "fifo-size",
+                             &inst->fifo_size);
   if (err)
   {
-    printk(KERN_ERR "%s: failed to retrieve TX fifo depth\n",
+    printk(KERN_ERR "%s: failed to retrieve OLED fifo size\n",
            DRIVER_NAME);
     return err;
   }
@@ -226,7 +224,7 @@ static struct platform_driver esl_oled_driver = {
     .remove = esl_oled_remove,
     .driver = {
         .name = DRIVER_NAME,
-        .of_match_table = of_match_ptr(esl_audio_of_ids),// not sure what this line is for
+        .of_match_table = of_match_ptr(esl_oled_of_ids),// not sure what this line is for
     },
 };
 
@@ -235,23 +233,23 @@ static int esl_oled_init(void)
   int err;
 
   // alocate character device region
-  err = alloc_chrdev_region(&driver_data.first_devno, 0, 16, "zedaudio");
+  err = alloc_chrdev_region(&driver_data.first_devno, 0, 16, "zedoled");
   if (err < 0)
   {
     return err;
   }
 
-
-
   // although not using sysfs, still necessary in order to automatically
   // get device node in /dev
-  driver_data.class = class_create(THIS_MODULE, "zedaudio");
+  driver_data.class = class_create(THIS_MODULE, "zedoled");
   if (IS_ERR(driver_data.class))
   {
     return -ENOENT;
   }
 
   platform_driver_register(&esl_oled_driver);
+
+  printk(KERN_INFO "Sucessfully initialized OLED module");
 
   return 0;
 }
@@ -267,6 +265,8 @@ static void esl_oled_exit(void)
 
   // plat driver unregister
   platform_driver_unregister(&esl_oled_driver);
+
+  printk(KERN_INFO "Sucessfully exited OLED module");
 
 }
 
