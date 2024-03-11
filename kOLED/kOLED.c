@@ -19,9 +19,24 @@
 #include <linux/fs.h>
 #include <asm/io.h>
 
-
 #define DRIVER_NAME "esl-oled"
 
+
+//https://docs.xilinx.com/r/en-US/pg153-axi-quad-spi/Port-Descriptions
+// spi register space
+SRR = 0x40;        // software reg reset
+SPICR = 0x60;      // spi cont reg
+SPISR = 0x64;      // spi stat reg
+SPIDTR = 0x68;     // spi data trans reg
+SPIDRR = 0x6C;     // spi data rec reg
+SPISSR = 0x70;     // slave select
+SPI_TXFIFO = 0x78; // occupancy tx
+SPI_RXFIFO = 0x74; // occupancy rx
+
+// interrupts
+DGIER = 0x1C; //  dev global ier
+IPISR = 0x20; // ip isr
+IPIER = 0x28; // ip ier
 
 // structure for an individual instance (ie. one audio driver)
 struct esl_oled_instance
@@ -41,10 +56,6 @@ struct esl_oled_instance
 
   // fifo buffer
   unsigned char fifo_buf[31];
-
-  // wait queue
-  wait_queue_head_t waitq;
-
 };
 
 // matching table
@@ -52,7 +63,7 @@ static struct of_device_id esl_oled_of_ids[] = {
     {.compatible = "xlnx,xps-spi-2.00.a"},
     {}};
 
-// structure for class of all audio drivers
+// structure for class of all oled drivers
 struct esl_oled_driver
 {
   dev_t first_devno;
@@ -68,11 +79,38 @@ static struct esl_oled_driver driver_data = {
     .instance_list = LIST_HEAD_INIT(driver_data.instance_list),
 };
 
+// find instance from inode using minor number and linked list
+static struct esl_oled_instance *inode_to_instance(struct inode *i)
+{
+  struct esl_oled_instance *inst_iter;
+  unsigned int minor = iminor(i);
+
+  // start with fist element in linked list (stored at class),
+  // and iterate through its elements
+  list_for_each_entry(inst_iter, &driver_data.instance_list, inst_list)
+  {
+    // found matching minor number?
+    if (MINOR(inst_iter->devno) == minor)
+    {
+      // return instance pointer of corresponding instance
+      return inst_iter;
+    }
+  }
+
+  // not found
+  return NULL;
+}
+
+// return instance struct based on file
+static struct esl_oled_instance *file_to_instance(struct file *f)
+{
+  return inode_to_instance(f->f_path.dentry->d_inode);
+}
 
 /* Character device File Ops */
 static ssize_t esl_oled_write(struct file *f,
-                               const char __user *buf, size_t len,
-                               loff_t *offset)
+                              const char __user *buf, size_t len,
+                              loff_t *offset)
 {
   ssize_t written;
 
@@ -94,7 +132,7 @@ static struct class esl_oled_class = {
 static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
 {
   struct esl_oled_instance *inst = dev_id;
- 
+
   return IRQ_HANDLED;
 }
 
@@ -104,6 +142,8 @@ static int esl_oled_probe(struct platform_device *pdev)
   int err;
   struct resource *res;
   struct device *dev;
+
+  printk(KERN_INFO "start probe");
 
   dev_t devno = MKDEV(driver_data.first_devno, driver_data.instance_count);
 
@@ -162,7 +202,6 @@ static int esl_oled_probe(struct platform_device *pdev)
   // save irq number
   inst->irqnum = res->start;
 
-
   // create character device
 
   // get device number
@@ -172,7 +211,6 @@ static int esl_oled_probe(struct platform_device *pdev)
   printk(KERN_INFO "Device probed with devno #%u", inst->devno);
   printk(KERN_INFO "Device probed with inst count #%u", driver_data.instance_count);
 
-
   cdev_init(&inst->chr_dev, &esl_oled_fops);
   inst->chr_dev.owner = THIS_MODULE;
   err = cdev_add(&inst->chr_dev, inst->devno, 1);
@@ -181,8 +219,6 @@ static int esl_oled_probe(struct platform_device *pdev)
     printk(KERN_ERR "Failed to add cdev\n");
     return err;
   }
-
-  printk(KERN_INFO "inst->devno minor %u", MINOR(inst->devno));
 
   // Device creation for sysfs
   dev = device_create(driver_data.class, &pdev->dev, inst->devno, NULL, "zedoled%d", MINOR(inst->devno));
@@ -200,7 +236,6 @@ static int esl_oled_probe(struct platform_device *pdev)
   // put into list
   INIT_LIST_HEAD(&inst->inst_list);
   list_add(&inst->inst_list, &driver_data.instance_list);
-
 
   return 0;
 }
@@ -224,7 +259,7 @@ static struct platform_driver esl_oled_driver = {
     .remove = esl_oled_remove,
     .driver = {
         .name = DRIVER_NAME,
-        .of_match_table = of_match_ptr(esl_oled_of_ids),// not sure what this line is for
+        .of_match_table = of_match_ptr(esl_oled_of_ids), // not sure what this line is for
     },
 };
 
@@ -233,7 +268,7 @@ static int esl_oled_init(void)
   int err;
 
   // alocate character device region
-  err = alloc_chrdev_region(&driver_data.first_devno, 0, 16, "zedoled");
+  err = alloc_chrdev_region(&driver_data.first_devno, 0, 2, "zedoled");
   if (err < 0)
   {
     return err;
@@ -258,7 +293,7 @@ static void esl_oled_exit(void)
 {
 
   // free character device region
-  unregister_chrdev_region(driver_data.first_devno, 16);
+  unregister_chrdev_region(driver_data.first_devno, 1);
 
   // remove class
   class_destroy(driver_data.class);
@@ -267,7 +302,6 @@ static void esl_oled_exit(void)
   platform_driver_unregister(&esl_oled_driver);
 
   printk(KERN_INFO "Sucessfully exited OLED module");
-
 }
 
 module_init(esl_oled_init);
