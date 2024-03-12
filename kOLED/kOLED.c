@@ -60,7 +60,7 @@ struct esl_oled_instance
 
 // matching table
 static struct of_device_id esl_oled_of_ids[] = {
-    {.compatible = "xlnx,zynq-qspi-1.0^@"},
+    {.compatible = "esl,null-spi"},
     {}};
 
 // structure for class of all oled drivers
