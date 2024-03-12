@@ -24,19 +24,19 @@
 
 //https://docs.xilinx.com/r/en-US/pg153-axi-quad-spi/Port-Descriptions
 // spi register space
-SRR = 0x40;        // software reg reset
-SPICR = 0x60;      // spi cont reg
-SPISR = 0x64;      // spi stat reg
-SPIDTR = 0x68;     // spi data trans reg
-SPIDRR = 0x6C;     // spi data rec reg
-SPISSR = 0x70;     // slave select
-SPI_TXFIFO = 0x78; // occupancy tx
-SPI_RXFIFO = 0x74; // occupancy rx
+// static int SRR = 0x40;        // software reg reset
+// static int SPICR = 0x60;      // spi cont reg
+// static int SPISR = 0x64;      // spi stat reg
+// static int SPIDTR = 0x68;     // spi data trans reg
+// static int SPIDRR = 0x6C;     // spi data rec reg
+// static int SPISSR = 0x70;     // slave select
+// static int SPI_TXFIFO = 0x78; // occupancy tx
+// static int SPI_RXFIFO = 0x74; // occupancy rx
 
-// interrupts
-DGIER = 0x1C; //  dev global ier
-IPISR = 0x20; // ip isr
-IPIER = 0x28; // ip ier
+// // interrupts
+// static int DGIER = 0x1C; //  dev global ier
+// static int IPISR = 0x20; // ip isr
+// static int IPIER = 0x28; // ip ier
 
 // structure for an individual instance (ie. one audio driver)
 struct esl_oled_instance
@@ -60,7 +60,7 @@ struct esl_oled_instance
 
 // matching table
 static struct of_device_id esl_oled_of_ids[] = {
-    {.compatible = "xlnx,xps-spi-2.00.a"},
+    {.compatible = "xlnx,zynq-qspi-1.0^@"},
     {}};
 
 // structure for class of all oled drivers
@@ -71,6 +71,8 @@ struct esl_oled_driver
   unsigned int instance_count;    // how many drivers have been instantiated?
   struct list_head instance_list; // pointer to first instance
 };
+
+
 
 // allocate and initialize global data (class level)
 static struct esl_oled_driver driver_data = {
@@ -135,6 +137,7 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
 
   return IRQ_HANDLED;
 }
+
 
 static int esl_oled_probe(struct platform_device *pdev)
 {
@@ -259,7 +262,7 @@ static struct platform_driver esl_oled_driver = {
     .remove = esl_oled_remove,
     .driver = {
         .name = DRIVER_NAME,
-        .of_match_table = of_match_ptr(esl_oled_of_ids), // not sure what this line is for
+        .of_match_table = of_match_ptr(esl_oled_of_ids),  
     },
 };
 
@@ -268,7 +271,7 @@ static int esl_oled_init(void)
   int err;
 
   // alocate character device region
-  err = alloc_chrdev_region(&driver_data.first_devno, 0, 2, "zedoled");
+  err = alloc_chrdev_region(&driver_data.first_devno, 0, 1, "zedoled");
   if (err < 0)
   {
     return err;
