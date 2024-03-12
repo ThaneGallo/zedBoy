@@ -1,0 +1,1 @@
+cmd_/home/thane/projects2/prj-snake-team/kOLED/kOLED.ko := arm-esl-linux-gnueabi-ld -r -EL --build-id=sha1  -T scripts/module.lds -o /home/thane/projects2/prj-snake-team/kOLED/kOLED.ko /home/thane/projects2/prj-snake-team/kOLED/kOLED.o /home/thane/projects2/prj-snake-team/kOLED/kOLED.mod.o;  true
