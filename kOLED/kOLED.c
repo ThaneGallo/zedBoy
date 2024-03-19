@@ -18,10 +18,6 @@
 #include <linux/kdev_t.h>
 #include <linux/fs.h>
 #include <asm/io.h>
-#include <linux/gpio.h>
-#include <linux/gpio/consumer.h>
-#include <linux/gpio/driver.h>
-
 
 #define DRIVER_NAME "esl-oled"
 
@@ -41,21 +37,6 @@
 // static int DGIER = 0x1C; //  dev global ier
 // static int IPISR = 0x20; // ip isr
 // static int IPIER = 0x28; // ip ier
-
-// button interruptss
-// #define BTN_GPIO_ADDR 0x41220000 
-static unsigned int BTN_GPIO_ADDR = 0x41220000;
-#define BUTTON_GPIO_COUNT 8
-static int button_irqnum; // Button GPIO IRQ Number
-static void __iomem *button_regs; // BUTTON GPIO registers
-
-#define GPIO_DATA 0x00
-#define GPIO_TRI 0x04
-#define GPIO2_DATA 0x08
-#define GPIO2_TRI 0x0C
-#define GIER_REG 0x011C
-#define IER_REG 0x0128
-#define ISR_REG 0x0120
 
 // structure for an individual instance (ie. one audio driver)
 struct esl_oled_instance
@@ -90,6 +71,8 @@ struct esl_oled_driver
   unsigned int instance_count;    // how many drivers have been instantiated?
   struct list_head instance_list; // pointer to first instance
 };
+
+
 
 // allocate and initialize global data (class level)
 static struct esl_oled_driver driver_data = {
@@ -147,7 +130,7 @@ static struct class esl_oled_class = {
     .owner = THIS_MODULE,
 };
 
-/* OLED interrupt handler */
+/* interrupt handler */
 static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
 {
   struct esl_oled_instance *inst = dev_id;
@@ -155,116 +138,6 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
   return IRQ_HANDLED;
 }
 
-/* Button interrupt handler */
-static irqreturn_t esl_button_irq_handler(int irq, void *dev_id)
-{
-  struct esl_oled_instance *inst = dev_id;
-
-  printk(KERN_INFO "Button interrupt");
-
-  return IRQ_HANDLED;
-}
-
-// enable interrupts for buttons
-static int enable_button_interrupts(struct esl_oled_instance *inst)
-{
-  int err;
-  int i;
-  struct gpio_chip* chip;
-  struct platform_device* pdev;
-  struct device* dev;
-  struct gpio_desc* gdesc;
-  struct resource *res;
-
-  // find GPIO description by GPIO number passed
-  gdesc = gpio_to_desc(BTN_GPIO_ADDR);
-  if (!gdesc)
-    {
-      printk("error getting GPIO description for buttons!\n");
-      return -ENODEV;
-    }
-
-  // get chip of switches gpio
-  chip = gpiod_to_chip(gdesc);
-  if (!chip)
-    {
-      printk("error getting button GPIO chip\n");
-      return -ENODEV;
-    }
-
-  // retrieve original platform device from gpio chip,
-  // now we can extract information from the device tree node
-  dev = chip->parent;
-  pdev = to_platform_device(dev);
-
-  printk(KERN_INFO "pdev name: %s\n", pdev->name);
-  printk(KERN_INFO "pdev id: %d\n", pdev->id);
-  printk(KERN_INFO "pdev num resources: %d\n", pdev->num_resources);
-
-  // Acquire the correct hardware interrupt number
-  res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-  if (!res) {
-    printk(KERN_ERR "Failed to get IRQ resource\n");
-    return -ENODEV;
-  }
-  button_irqnum = res->start;
-
-  // printk(KERN_INFO "IRQ number: %d\n", irqnum);
-  // printk(KERN_INFO "IRQ flags: %lu\n", res->flags);
-  // printk(KERN_INFO "IRQ start: %lu\n", res->start);
-  // printk(KERN_INFO "IRQ end: %lu\n", res->end);
-  // printk(KERN_INFO "IRQ name: %s\n", res->name);
-  // printk(KERN_INFO "Resource size: %lu\n", resource_size(res));
-  // printk(KERN_INFO "Memory region start address: %pa\n", &res->start);
-
-  // Request an operating system interrupt
-  err = devm_request_irq(&pdev->dev, res->start,
-                         esl_button_irq_handler,
-                         IRQF_TRIGGER_HIGH,
-                         "zedbtn", inst);
-  if (err < 0)
-  {
-    return err;
-  }
-
-  // get platform resource
-  res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-  if (!res) {
-    printk(KERN_ERR "Failed to get IRQ resource\n");
-    return -ENODEV;
-  }
-
-  // Retrieve memory region and map to button_regs
-  button_regs = devm_ioremap(dev, res->start, resource_size(res));
-  if (IS_ERR(button_regs))
-  {
-    return PTR_ERR(button_regs);
-  }
-  
-
-  // // Enable interrupts in the AXI GPIO controller
-  // enable_interrupts();
-  // Set tri buffer to 1
-  iowrite32(0x01, button_regs + GPIO_TRI);
-  printk(KERN_INFO "GPIO_TRI: %x\n", ioread32(button_regs + GPIO_TRI));
-
-  // enable global interrupt in the GIER register, set bit 31
-  iowrite32(0x80000000, button_regs + GIER_REG);
-  printk(KERN_INFO "GIER: %x\n", ioread32(button_regs + GIER_REG));
-
-  // 1. enable all IER bits
-  iowrite32(0x3, button_regs + IER_REG);
-  printk(KERN_INFO "IER: %x\n", ioread32(button_regs + IER_REG));
-
-
-  // initialize GPIOs
-  // initialize_gpio();
-  for (i = 0; i < BUTTON_GPIO_COUNT; ++i) {
-    gpio_direction_input(BTN_GPIO_ADDR + i);
-  }
-
-  return 0;
-}
 
 static int esl_oled_probe(struct platform_device *pdev)
 {
@@ -360,13 +233,6 @@ static int esl_oled_probe(struct platform_device *pdev)
 
   printk(KERN_INFO "after device_create");
 
-  // enable button interrupts
-  err = enable_button_interrupts(inst);
-  if (err)
-  {
-    return err;
-  }
-
   // increment instance count
   driver_data.instance_count++;
 
@@ -382,7 +248,6 @@ static int esl_oled_remove(struct platform_device *pdev)
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
   // cleanup and remove
-  // cdev_del(&inst->chr_dev);
   device_destroy(&esl_oled_class, inst->devno);
 
   // remove from list
