@@ -21,28 +21,60 @@
 
 #define DRIVER_NAME "esl-oled"
 
+https://docs.xilinx.com/r/en-US/pg153-axi-quad-spi/Port-Descriptions
+ //spi register space
+ static int SRR = 0x40;        // software reg reset
+ static int SPICR = 0x60;      // spi cont reg
+ static int SPISR = 0x64;      // spi stat reg
+ static int SPIDTR = 0x68;     // spi data trans reg
+ static int SPIDRR = 0x6C;     // spi data rec reg
+ static int SPISSR = 0x70;     // slave select
+ static int SPI_TXFIFO = 0x78; // occupancy tx
+ static int SPI_RXFIFO = 0x74; // occupancy rx
 
-//https://docs.xilinx.com/r/en-US/pg153-axi-quad-spi/Port-Descriptions
-// spi register space
-// static int SRR = 0x40;        // software reg reset
-// static int SPICR = 0x60;      // spi cont reg
-// static int SPISR = 0x64;      // spi stat reg
-// static int SPIDTR = 0x68;     // spi data trans reg
-// static int SPIDRR = 0x6C;     // spi data rec reg
-// static int SPISSR = 0x70;     // slave select
-// static int SPI_TXFIFO = 0x78; // occupancy tx
-// static int SPI_RXFIFO = 0x74; // occupancy rx
+// interrupts
+static int DGIER = 0x1C; //  dev global ier
+static int IPISR = 0x20; // ip isr
+static int IPIER = 0x28; // ip ier
 
-// // interrupts
-// static int DGIER = 0x1C; //  dev global ier
-// static int IPISR = 0x20; // ip isr
-// static int IPIER = 0x28; // ip ier
+#define DISPLAY_BUF_SZ 512 /* 32 x 128 bit monochrome  == 512 bytes        */
+#define MAX_LINE_LEN 16    /* 128 bits wide and current char width is 8 bit */
+#define MAX_ROW 4
+#define OLED_MAX_PG_CNT 4 /* number of display pages in OLED controller */
+#define OLED_CONTROLLER_PG_SZ 128
+#define OLED_CONTROLLER_CMD 0
+#define OLED_CONTROLLER_DATA 1
 
-// structure for an individual instance (ie. one audio driver)
+/* commands for the OLED display controller	*/
+#define OLED_SET_PG_ADDR 0x22
+#define OLED_DISPLAY_OFF 0xAE
+#define OLED_DISPLAY_ON 0xAF
+#define OLED_CONTRAST_CTRL 0x81
+#define OLED_SET_PRECHARGE_PERIOD 0xD9
+#define OLED_SET_SEGMENT_REMAP 0xA1
+#define OLED_SET_COM_DIR 0xC8
+#define OLED_SET_COM_PINS 0xDA
+
+#define OLED_CTRL_REG 0x41200000
+
+static void __iomem *ctrl_reg_global;
+
 struct esl_oled_instance
 {
-  void *__iomem regs;  // fifo registers
+  void *__iomem spi_regs;  // oled registers
+  void *__iomem ctrl_regs; // oled registers
+
+  struct oled_ctrl;
+
+  struct mutex mutex; // lock/unlock
+
+  /* Display Buffers */
+  uint8_t disp_on;
+  uint8_t *disp_buf;
+
+  struct spi_device *spi;
   struct cdev chr_dev; // character device
+
   dev_t devno;
 
   // list head
@@ -71,8 +103,6 @@ struct esl_oled_driver
   unsigned int instance_count;    // how many drivers have been instantiated?
   struct list_head instance_list; // pointer to first instance
 };
-
-
 
 // allocate and initialize global data (class level)
 static struct esl_oled_driver driver_data = {
@@ -114,8 +144,51 @@ static ssize_t esl_oled_write(struct file *f,
                               const char __user *buf, size_t len,
                               loff_t *offset)
 {
-  ssize_t written;
 
+  struct esl_oled_instance *inst = file_to_instance(f);
+  ssize_t written;
+  // unsigned int written = 0;
+  // unsigned int space;
+  // unsigned int to_write;
+  // int err, i;
+
+  // if (!inst)
+  // {
+  //   // instance not found
+  //   return -ENOENT;
+  // }
+
+  // while (len > 0)
+  // {
+  //   space = ioread32(inst->regs +)
+
+  //       if (space == 0)
+  //   {
+  //     // FIFO is full, wait
+  //     usleep_range(1000, 2000); // check the range
+
+  //     continue;
+  //   }
+
+  //   to_write = min((size_t)space, len);
+
+  //   // Copy from user space to kernel buffer
+  //   if (copy_from_user(inst->fifo_buf, buf + written, to_write))
+  //   {
+  //     return -EFAULT;
+  //   }
+
+  //   // Write to AXI FIFO
+  //   for (i = 0; i < to_write; i += 4)
+  //   {
+  //     iowrite32(*(u32 *)(inst->fifo_buf + i), inst->regs + TDFD);
+  //   }
+
+  //   iowrite32(to_write, inst->regs + TLR);
+
+  //   written += to_write;
+  //   len -= to_write;
+  // }
   return written;
 }
 
@@ -135,9 +208,97 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
 {
   struct esl_oled_instance *inst = dev_id;
 
+  //interrupt errors
+
+
+
+
+  // Reads the interrupt status 
+  ISR_reg = ioread32(inst->spi_regs + IPISR);
+
+
+ if (ISR_reg & (1 << TX_OVERRUN_ERR))
+  {
+    printk(KERN_WARNING "TX overrun error\n");
+    return -EINVAL;
+  }
+
+ 
+
   return IRQ_HANDLED;
 }
 
+static int oled_setup(struct platform_device *pdev)
+{
+
+  struct esl_oled_instance *inst = platform_get_drvdata(pdev);
+
+  // 0xAE
+
+  //     0xD5 0x80
+
+  //     0xA8 0x1F
+
+  //     0xD3 0x00
+
+  //     0x40
+
+  //     0x8D // 0x10 0x14
+
+  //     0xA1
+
+  //     0xC8
+
+  //     0xDA
+
+  //     0x81 0x8F
+
+  //     0xD9 // 0x22 0xF1
+
+  //     0xDB 0x40
+
+  //     0xA4
+
+  //     0xA6
+
+  //     clear
+  //     ?
+
+  //     0xAF
+
+  return 0;
+}
+
+static int oled_spi_setup(struct platform_device *pdev)
+{
+  struct esl_oled_instance *inst = platform_get_drvdata(pdev);
+
+  tx_rst = 0x00000010;
+  master_mode = 0x00000002;
+
+  //clocking selection
+  CPOL = 0x00000000;
+  CPHA = 0x00000000;
+
+  SCK_SETUP = CPOL | CPHA;
+
+  //itr standard
+  DRR_NOT_EMPTY = 0x00000080;
+  TX_FIFO_ALL = 0x000000AF;
+  ITR_EN = DRR_NOT_EMPTY | TX_FIFO_ALL;
+
+  // software reset
+  iowrite32(0x0000000a, inst->spi_regs + SRR);
+  
+  //resets tx register
+  iowrite32(tx_rst, inst->spi_regs + SPICR);
+
+  //interrupt enable
+  iowrite32(ITR_EN, inst->spi_regs + DGIER);
+
+  return 0;
+
+}
 
 static int esl_oled_probe(struct platform_device *pdev)
 {
@@ -145,8 +306,6 @@ static int esl_oled_probe(struct platform_device *pdev)
   int err;
   struct resource *res;
   struct device *dev;
-
-  printk(KERN_INFO "start probe");
 
   dev_t devno = MKDEV(driver_data.first_devno, driver_data.instance_count);
 
@@ -170,10 +329,10 @@ static int esl_oled_probe(struct platform_device *pdev)
     return PTR_ERR(res);
   }
 
-  inst->regs = devm_ioremap_resource(&pdev->dev, res);
-  if (IS_ERR(inst->regs))
+  inst->spi_regs = devm_ioremap_resource(&pdev->dev, res);
+  if (IS_ERR(inst->spi_regs))
   {
-    return PTR_ERR(inst->regs);
+    return PTR_ERR(inst->spi_regs);
   }
 
   // get fifo depth
@@ -213,6 +372,7 @@ static int esl_oled_probe(struct platform_device *pdev)
 
   printk(KERN_INFO "Device probed with devno #%u", inst->devno);
   printk(KERN_INFO "Device probed with inst count #%u", driver_data.instance_count);
+  printk(KERN_INFO "Device probed with address #%p", inst->regs);
 
   cdev_init(&inst->chr_dev, &esl_oled_fops);
   inst->chr_dev.owner = THIS_MODULE;
@@ -240,6 +400,8 @@ static int esl_oled_probe(struct platform_device *pdev)
   INIT_LIST_HEAD(&inst->inst_list);
   list_add(&inst->inst_list, &driver_data.instance_list);
 
+  oled_spi_setup();
+
   return 0;
 }
 
@@ -262,13 +424,63 @@ static struct platform_driver esl_oled_driver = {
     .remove = esl_oled_remove,
     .driver = {
         .name = DRIVER_NAME,
-        .of_match_table = of_match_ptr(esl_oled_of_ids),  
+        .of_match_table = of_match_ptr(esl_oled_of_ids),
     },
 };
+
+static int oled_chip_setup(unsigned long addr)
+{
+
+  int err;
+  struct gpio_chip *chip;
+  struct platform_device *pdev;
+  struct device *dev;
+  struct gpio_desc *gdesc;
+  struct resource *res;
+
+  // find GPIO description by GPIO number passed
+  gdesc = gpio_to_desc(addr);
+  if (!gdesc)
+  {
+    printk("error getting GPIO description for oled!\n");
+    return -ENODEV;
+  }
+
+  // get chip of switches gpio
+  chip = gpiod_to_chip(gdesc);
+  if (!chip)
+  {
+    printk("error getting oled GPIO chip\n");
+    return -ENODEV;
+  }
+
+  // retrieve original platform device from gpio chip,
+  // now we can extract information from the device tree node
+  dev = chip->parent;
+  pdev = to_platform_device(dev);
+
+  // printk(KERN_INFO MODULE_NAME ": Module loaded with led_gpio_base = %u, switch_gpio_base = %u\n", led_gpio_base, switch_gpio_base);
+
+  res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+  if (res == NULL)
+  {
+    return -ENOMEM;
+  }
+
+  ctrl_reg_global = devm_ioremap(dev, res->start, resource_size(res));
+
+  if (IS_ERR(ctrl_reg_global))
+  {
+    return -PTR_ERR(ctrl_reg_global);
+  }
+
+  return 0;
+}
 
 static int esl_oled_init(void)
 {
   int err;
+  unsigned long addr = 0x41200000;
 
   // alocate character device region
   err = alloc_chrdev_region(&driver_data.first_devno, 0, 1, "zedoled");
@@ -286,6 +498,8 @@ static int esl_oled_init(void)
   }
 
   platform_driver_register(&esl_oled_driver);
+
+  oled_chip_setup(addr);
 
   printk(KERN_INFO "Sucessfully initialized OLED module");
 
