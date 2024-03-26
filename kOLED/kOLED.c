@@ -21,16 +21,16 @@
 
 #define DRIVER_NAME "esl-oled"
 
-https://docs.xilinx.com/r/en-US/pg153-axi-quad-spi/Port-Descriptions
- //spi register space
- static int SRR = 0x40;        // software reg reset
- static int SPICR = 0x60;      // spi cont reg
- static int SPISR = 0x64;      // spi stat reg
- static int SPIDTR = 0x68;     // spi data trans reg
- static int SPIDRR = 0x6C;     // spi data rec reg
- static int SPISSR = 0x70;     // slave select
- static int SPI_TXFIFO = 0x78; // occupancy tx
- static int SPI_RXFIFO = 0x74; // occupancy rx
+// docs.xilinx.com/r/en-US/pg153-axi-quad-spi/Port-Descriptions
+// spi register space
+static int SRR = 0x40;        // software reg reset
+static int SPICR = 0x60;      // spi cont reg
+static int SPISR = 0x64;      // spi stat reg
+static int SPIDTR = 0x68;     // spi data trans reg
+static int SPIDRR = 0x6C;     // spi data rec reg
+static int SPISSR = 0x70;     // slave select
+static int SPI_TXFIFO = 0x78; // occupancy tx
+static int SPI_RXFIFO = 0x74; // occupancy rx
 
 // interrupts
 static int DGIER = 0x1C; //  dev global ier
@@ -147,49 +147,37 @@ static ssize_t esl_oled_write(struct file *f,
 
   struct esl_oled_instance *inst = file_to_instance(f);
   ssize_t written;
-  // unsigned int written = 0;
-  // unsigned int space;
-  // unsigned int to_write;
-  // int err, i;
+  unsigned int written = 0;
+  unsigned int space;
+  unsigned int to_write;
+  int err, i;
 
-  // if (!inst)
-  // {
-  //   // instance not found
-  //   return -ENOENT;
-  // }
+  if (!inst)
+  {
+    // instance not found
+    return -ENOENT;
+  }
 
-  // while (len > 0)
-  // {
-  //   space = ioread32(inst->regs +)
+  to_write = min((size_t)space, len);
 
-  //       if (space == 0)
-  //   {
-  //     // FIFO is full, wait
-  //     usleep_range(1000, 2000); // check the range
+  // Copy from user space to kernel buffer
+  if (copy_from_user(inst->fifo_buf, buf + written, to_write))
+  {
+    return -EFAULT;
+  }
 
-  //     continue;
-  //   }
+  // Write to AXI FIFO
+  for (i = 0; i < to_write; i += 4)
+  {
+    iowrite32(*(u32 *)(inst->fifo_buf + i), inst->regs + TDFD);
+  }
 
-  //   to_write = min((size_t)space, len);
+  iowrite32(to_write, inst->regs + TLR);
 
-  //   // Copy from user space to kernel buffer
-  //   if (copy_from_user(inst->fifo_buf, buf + written, to_write))
-  //   {
-  //     return -EFAULT;
-  //   }
-
-  //   // Write to AXI FIFO
-  //   for (i = 0; i < to_write; i += 4)
-  //   {
-  //     iowrite32(*(u32 *)(inst->fifo_buf + i), inst->regs + TDFD);
-  //   }
-
-  //   iowrite32(to_write, inst->regs + TLR);
-
-  //   written += to_write;
-  //   len -= to_write;
-  // }
-  return written;
+  written += to_write;
+  len -= to_write;
+}
+return written;
 }
 
 // definition of file operations
@@ -208,22 +196,47 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
 {
   struct esl_oled_instance *inst = dev_id;
 
-  //interrupt errors
+  // interrupt errors
+  TX_HALF_EMPTY = 0x00000040;
+  DTR_UNDERRUN = 0x00000004;
+  DTR_EMPTY = 0x00000003;
+  SLAVE_MODF = 0x00000002;
+  MODF = 0x00000001;
 
-
-
-
-  // Reads the interrupt status 
+  // Reads the interrupt status
   ISR_reg = ioread32(inst->spi_regs + IPISR);
 
-
- if (ISR_reg & (1 << TX_OVERRUN_ERR))
+  if (ISR_reg & (1 << MODF))
   {
-    printk(KERN_WARNING "TX overrun error\n");
+    printk(KERN_WARNING "mode error\n");
     return -EINVAL;
   }
 
- 
+  else if (ISR_reg & (1 << SLAVE_MODF))
+  {
+    printk(KERN_WARNING "slave mode error\n");
+    return -EINVAL;
+  }
+
+  else if (ISR_reg & (1 << DTR_UNDERRUN))
+  {
+    printk(KERN_WARNING "DTR_underrun!\n");
+    return -EINVAL;
+  }
+
+  else if (ISR_reg & (1 << DTR_EMPTY))
+  {
+    printk(KERN_WARNING "DTR empty!\n");
+    return -EINVAL;
+  }
+
+  else if (ISR_reg & (1 << TX_HALF_EMPTY))
+  {
+    // if half empty wait a little to fill back up
+    printk(KERN_WARNING "tx fifo half empty!\n");
+    usleep_range(1000, 2000);
+    continue;
+  }
 
   return IRQ_HANDLED;
 }
@@ -231,40 +244,25 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
 static int oled_setup(struct platform_device *pdev)
 {
 
+  // folows setup instructions as indicated in datasheet
+
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
-  // 0xAE
+  iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + SPIDTR);
+  
+  //sets addressing mode
+  iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + SPIDTR);
 
-  //     0xD5 0x80
+  //page addressing mode
+  //0x20 --> 0x10
 
-  //     0xA8 0x1F
+  //0xBO 0xB7
+  // lower start column addr 0x00 to 0x0F
+  // upper start 0x10 0x1F
 
-  //     0xD3 0x00
 
-  //     0x40
-
-  //     0x8D // 0x10 0x14
-
-  //     0xA1
-
-  //     0xC8
-
-  //     0xDA
-
-  //     0x81 0x8F
-
-  //     0xD9 // 0x22 0xF1
-
-  //     0xDB 0x40
-
-  //     0xA4
-
-  //     0xA6
-
-  //     clear
-  //     ?
-
-  //     0xAF
+  //display stary line
+  
 
   return 0;
 }
@@ -273,31 +271,35 @@ static int oled_spi_setup(struct platform_device *pdev)
 {
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
+  unsigned long tx_rst, master_mode, CPOL, CPHA, SCK_SETUP;
+  unsigned long TX_FIFO_ALL, DRR_NOT_EMPTY, ITR_EN;
+
   tx_rst = 0x00000010;
   master_mode = 0x00000002;
 
-  //clocking selection
+  // clocking selection
   CPOL = 0x00000000;
   CPHA = 0x00000000;
 
   SCK_SETUP = CPOL | CPHA;
 
-  //itr standard
-  DRR_NOT_EMPTY = 0x00000080;
+  // itr standard
+  DRR_NOT_EMPTY = 0x00000080; //?
   TX_FIFO_ALL = 0x000000AF;
   ITR_EN = DRR_NOT_EMPTY | TX_FIFO_ALL;
 
+  SPICR_SETUP = SCK_SETUP | tx_rst | master_mode;
+
   // software reset
   iowrite32(0x0000000a, inst->spi_regs + SRR);
-  
-  //resets tx register
-  iowrite32(tx_rst, inst->spi_regs + SPICR);
 
-  //interrupt enable
+  // resets tx register
+  iowrite32(SPICR_SETUP, inst->spi_regs + SPICR);
+
+  // interrupt enable
   iowrite32(ITR_EN, inst->spi_regs + DGIER);
 
   return 0;
-
 }
 
 static int esl_oled_probe(struct platform_device *pdev)
