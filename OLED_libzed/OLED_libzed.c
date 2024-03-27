@@ -490,6 +490,10 @@ void drawLetter(struct zedoled_data *inst, char letter, int origin_x, int origin
 
         break;
 
+    case ' ':
+        
+        break;
+
     case default:
         zedoled_set_pixel(inst, 0 + origin_x, 0 + origin_y, 1);
         zedoled_set_pixel(inst, 1 + origin_x, 0 + origin_y, 1);
