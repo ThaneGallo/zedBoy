@@ -133,7 +133,17 @@ int main()
     drawLetter(inst, 'l', 10, 0);
     drawLetter(inst, 'l', 15, 0);
 
-    drawWord(inst, "ball");
+    zedoled_update(inst);
+
+    sleep(1);
+
+    zedoled_all_off(inst);
+
+    drawWord(inst, "lab");
+
+    sleep(1);
+
+
 
     return 0;
 }
