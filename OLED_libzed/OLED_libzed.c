@@ -3,6 +3,9 @@
 #include <libzed/zed_oled.h>
 
 
+void drawLetter(){
+    
+}
 
 
 int main(){
