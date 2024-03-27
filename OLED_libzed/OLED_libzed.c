@@ -1,11 +1,12 @@
+#include <stdio.h>
+
 #include <libzed/axi_gpio.h>
 #include <libzed/zed_common.h>
 #include <libzed/zed_oled.h>
 
 void drawLetter(struct zedoled_data *inst, char letter, int offset_x, int offset_y)
 {
-    //every letter is 4 wide and 5 tall
-
+    // every letter is 4 wide and 5 tall
     switch (letter)
     {
     case a:
@@ -30,7 +31,7 @@ void drawLetter(struct zedoled_data *inst, char letter, int offset_x, int offset
         zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
         zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
         zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
-        
+
         zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
         zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
 
@@ -49,11 +50,10 @@ void drawLetter(struct zedoled_data *inst, char letter, int offset_x, int offset
         zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
         zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
         zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
-        
+
         zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
         zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
         zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
-
 
         zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
         zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
@@ -93,6 +93,20 @@ void drawLetter(struct zedoled_data *inst, char letter, int offset_x, int offset
     }
 }
 
+void drawWord(struct zedoled_data *inst, char *str)
+{
+    int i = 0;
+    int offset_y, offset_x = 1, 1;
+
+    while (str[i] != '\0')
+    {
+        drawLetter(inst, str[i]);
+        i++;
+        offset_x += 4;
+        offset_y += 4;
+    }
+}
+
 int main()
 {
     struct zedoled_data *inst;
@@ -119,6 +133,7 @@ int main()
     drawLetter(inst, 'l', 10, 0);
     drawLetter(inst, 'l', 15, 0);
 
+    drawWord(inst, "ball");
 
     return 0;
 }
