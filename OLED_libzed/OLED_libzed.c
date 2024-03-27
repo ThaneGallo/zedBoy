@@ -107,24 +107,114 @@ void drawLetter(struct zedoled_data *inst, char letter, int offset_x, int offset
         break;
 
     case 'f':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+
         break;
 
     case 'g':
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
+
         break;
+
     case 'h':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
+
+
         break;
+
     case 'i':
-        break;
-    case 'j':
-        break;
-    case 'k':
-        break;
-    case 'l':
         zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
         zedoled_set_pixel(inst, 1 + offset_x, 1 + offset_y, 1);
         zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
         zedoled_set_pixel(inst, 1 + offset_x, 3 + offset_y, 1);
         zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        
+        break;
+
+    case 'j':  
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+        
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+        
+        zedoled_set_pixel(inst, 3 + offset_x, 2 + offset_y, 1);
+        
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+
+        break;
+
+    case 'k':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
+
+        break;
+
+    case 'l':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
         break;
 
     case 'm':
@@ -167,32 +257,266 @@ void drawLetter(struct zedoled_data *inst, char letter, int offset_x, int offset
         break;
 
     case 'o':
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+
         break;
+
     case 'p':
+
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+
         break;
+
     case 'q':
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
+
         break;
+
     case 'r':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
+
         break;
+
     case 's':
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 3 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+
         break;
+
     case 't':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+
         break;
+
     case 'u':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 2 + offset_y, 1);
+        
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
+
         break;
+
     case 'v':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+        
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+    
+    
         break;
+
     case 'w':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 4 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 4 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 4 + offset_x, 2 + offset_y, 1);
+        
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 4 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+
         break;
+
     case 'x':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 3 + offset_y, 1);
+        
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+       
         break;
+
     case 'y':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 3 + offset_y, 1);
+        
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+
         break;
+
     case 'z':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 1 + offset_x, 3 + offset_y, 1);
+        
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
         break;
+
     case ':':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        
         break;
+
     case default:
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 2 + offset_y, 1);
+        
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
+
+        break;
+
     }
 }
 
