@@ -100,7 +100,7 @@ void drawWord(struct zedoled_data *inst, char *str)
 
     while (str[i] != '\0')
     {
-        drawLetter(inst, str[i]);
+        drawLetter(inst, str[i], offset_x, offset_y);
         i++;
         offset_x += 4;
         offset_y += 4;
