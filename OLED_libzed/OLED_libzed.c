@@ -495,7 +495,7 @@ void drawLetter(struct zedoled_data *inst, char letter, int origin_x, int origin
     default:
 =======
     case ' ':
-        
+
         break;
 
     case default:
@@ -524,7 +524,6 @@ void drawLetter(struct zedoled_data *inst, char letter, int origin_x, int origin
         zedoled_set_pixel(inst, 1 + origin_x, 4 + origin_y, 1);
         zedoled_set_pixel(inst, 2 + origin_x, 4 + origin_y, 1);
         zedoled_set_pixel(inst, 3 + origin_x, 4 + origin_y, 1);
-
     }
 }
 
@@ -559,7 +558,6 @@ int main()
         printf("OLED init failed");
         return EINVAL;
     }
-
 
     drawWord(inst, "menu:", 1);
     drawWord(inst, "play", 2);
