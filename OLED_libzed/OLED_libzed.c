@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <errno.h>
 
 #include <libzed/axi_gpio.h>
 #include <libzed/zed_common.h>
@@ -490,7 +491,7 @@ void drawLetter(struct zedoled_data *inst, char letter, int origin_x, int origin
 
         break;
 
-    case default:
+    default:
         zedoled_set_pixel(inst, 0 + origin_x, 0 + origin_y, 1);
         zedoled_set_pixel(inst, 1 + origin_x, 0 + origin_y, 1);
         zedoled_set_pixel(inst, 2 + origin_x, 0 + origin_y, 1);
@@ -516,7 +517,6 @@ void drawLetter(struct zedoled_data *inst, char letter, int origin_x, int origin
         zedoled_set_pixel(inst, 2 + origin_x, 4 + origin_y, 1);
         zedoled_set_pixel(inst, 3 + origin_x, 4 + origin_y, 1);
 
-        break;
     }
 }
 
@@ -526,6 +526,8 @@ void drawWord(struct zedoled_data *inst, char *str, int row)
     int origin_y, origin_x = 1;
 
     origin_y = origin_y + 4 * row;
+
+    printf("%d/n", origin_y);
 
     while (str[i] != '\0')
     {
@@ -540,9 +542,9 @@ int main()
     struct zedoled_data *inst;
     int ret;
 
-    inst = zedoled_get(void);
+    inst = zedoled_get();
 
-    ret = zedoled_initialize(struct zedoled_data * inst);
+    ret = zedoled_initialize(inst);
 
     if (ret != 0)
     {
@@ -550,24 +552,9 @@ int main()
         return EINVAL;
     }
 
-    zedoled_all_on(inst);
 
-    sleep(1);
-
-    zedoled_all_off(inst);
-
-    drawLetter(inst, 'b', 0, 0);
-    drawLetter(inst, 'a', 5, 0);
-    drawLetter(inst, 'l', 10, 0);
-    drawLetter(inst, 'l', 15, 0);
-
-    zedoled_update(inst);
-
-    sleep(1);
-
-    zedoled_all_off(inst);
-
-    drawWord(inst, "menu", 0);
+    drawWord(inst, "menu:", 1);
+    drawWord(inst, "play", 2);
 
     zedoled_update(inst);
 
