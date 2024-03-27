@@ -9,7 +9,7 @@ void drawLetter(struct zedoled_data *inst, char letter, int offset_x, int offset
     // every letter is 4 wide and 5 tall
     switch (letter)
     {
-    case a:
+    case 'a':
         zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
         zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
 
@@ -26,8 +26,9 @@ void drawLetter(struct zedoled_data *inst, char letter, int offset_x, int offset
 
         zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
         zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
+        break;
 
-    case b:
+    case 'b':
         zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
         zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
         zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
@@ -46,7 +47,9 @@ void drawLetter(struct zedoled_data *inst, char letter, int offset_x, int offset
         zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
         zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
 
-    case c:
+        break;
+
+    case 'c':
         zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
         zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
         zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
@@ -59,37 +62,137 @@ void drawLetter(struct zedoled_data *inst, char letter, int offset_x, int offset
         zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
         zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
 
-    case d:
+        break;
 
-    case e:
+    case 'd':
 
-    case f:
-    case g:
-    case h:
-    case i:
-    case j:
-    case k:
-    case l:
-        zedoled_set_pixel(struct zedoled_data * inst, 1 + offset_x, 0 + offset_y, 1);
-        zedoled_set_pixel(struct zedoled_data * inst, 1 + offset_x, 1 + offset_y, 1);
-        zedoled_set_pixel(struct zedoled_data * inst, 1 + offset_x, 2 + offset_y, 1);
-        zedoled_set_pixel(struct zedoled_data * inst, 1 + offset_x, 3 + offset_y, 1);
-        zedoled_set_pixel(struct zedoled_data * inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
 
-    case m:
-    case n:
-    case o:
-    case p:
-    case q:
-    case r:
-    case s:
-    case t:
-    case u:
-    case v:
-    case w:
-    case x:
-    case y:
-    case z:
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+
+        break;
+
+    case 'e':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
+
+        break;
+
+    case 'f':
+        break;
+
+    case 'g':
+        break;
+    case 'h':
+        break;
+    case 'i':
+        break;
+    case 'j':
+        break;
+    case 'k':
+        break;
+    case 'l':
+        zedoled_set_pixel(inst, 1 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 4 + offset_y, 1);
+        break;
+
+    case 'm':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 4 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 4 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 4 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 4 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 4 + offset_x, 4 + offset_y, 1);
+        break;
+
+    case 'n':
+        zedoled_set_pixel(inst, 0 + offset_x, 0 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 0 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 1 + offset_x, 1 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 1 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 2 + offset_x, 2 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 2 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 3 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 3 + offset_y, 1);
+
+        zedoled_set_pixel(inst, 0 + offset_x, 4 + offset_y, 1);
+        zedoled_set_pixel(inst, 3 + offset_x, 4 + offset_y, 1);
+        break;
+
+    case 'o':
+        break;
+    case 'p':
+        break;
+    case 'q':
+        break;
+    case 'r':
+        break;
+    case 's':
+        break;
+    case 't':
+        break;
+    case 'u':
+        break;
+    case 'v':
+        break;
+    case 'w':
+        break;
+    case 'x':
+        break;
+    case 'y':
+        break;
+    case 'z':
+        break;
+    case ':':
+        break;
+    case default:
     }
 }
 
@@ -102,8 +205,8 @@ void drawWord(struct zedoled_data *inst, char *str)
     {
         drawLetter(inst, str[i], offset_x, offset_y);
         i++;
-        offset_x += 4;
-        offset_y += 4;
+        offset_x += 5;
+        offset_y += 5;
     }
 }
 
@@ -139,11 +242,9 @@ int main()
 
     zedoled_all_off(inst);
 
-    drawWord(inst, "lab");
+    drawWord(inst, "menu");
 
     sleep(1);
-
-
 
     return 0;
 }
