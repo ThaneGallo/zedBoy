@@ -252,28 +252,28 @@ static int oled_on(struct platform_device *pdev)
 
   gpio = ioread32(inst->ctrl_regs);
 
-  //sets vdd to 1
+  // sets vdd to 1
   gpio = gpio | (3 << 1);
   iowrite32(inst->ctrl_regs, gpio);
 
-  //sets res# to low
+  // sets res# to low
   gpio = gpio & ~(1 << 1);
   iowrite32(inst->ctrl_regs, gpio);
 
-  //res switch delay
+  // res switch delay
   usleep(5);
 
-  //sets res# to high
+  // sets res# to high
   gpio = gpio | (1 << 1);
   iowrite32(inst->ctrl_regs, gpio);
 
-  //power on VCC
+  // power on VCC
   gpio = gpio | 1;
   iowrite32(inst->ctrl_regs, gpio);
 
   OLED_DISPLAY_ON
 
-  //turn on time
+  // turn on time
   usleep(100000);
 
   return 0;
@@ -289,21 +289,19 @@ static int oled_off(struct platform_device *pdev)
 
   gpio = ioread32(inst->ctrl_regs);
 
-  //power off VCC
+  // power off VCC
   gpio = gpio & ~(1);
   iowrite32(inst->ctrl_regs, gpio);
 
-  //t_off time
+  // t_off time
   usleep(100000);
 
-  //power off VDD
+  // power off VDD
   gpio = gpio & ~(3 << 1);
   iowrite32(inst->ctrl_regs, gpio);
- 
+
   return 0;
 }
-
-
 
 static int oled_spi_setup(struct platform_device *pdev)
 {
@@ -437,12 +435,11 @@ static int esl_oled_probe(struct platform_device *pdev)
   // put into list
   INIT_LIST_HEAD(&inst->inst_list);
   list_add(&inst->inst_list, &driver_data.instance_list);
-  
-  inst->ctrl_regs = ctrl_reg_global
+
+  inst->ctrl_regs = ctrl_reg_global;
 
   oled_on();
   oled_spi_setup();
- 
 
   return 0;
 }
@@ -450,7 +447,7 @@ static int esl_oled_probe(struct platform_device *pdev)
 static int esl_oled_remove(struct platform_device *pdev)
 {
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
-  
+
   oled_off();
 
   // cleanup and remove
@@ -458,8 +455,6 @@ static int esl_oled_remove(struct platform_device *pdev)
 
   // remove from list
   list_del(&inst->inst_list);
-
-  
 
   return 0;
 }
@@ -505,7 +500,6 @@ static int oled_chip_setup(unsigned long addr)
   dev = chip->parent;
   pdev = to_platform_device(dev);
 
- 
   res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
   if (res == NULL)
   {
