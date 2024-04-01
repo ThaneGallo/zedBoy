@@ -146,8 +146,7 @@ static ssize_t esl_oled_write(struct file *f,
 {
 
   struct esl_oled_instance *inst = file_to_instance(f);
-  ssize_t written;
-  unsigned int written = 0;
+  ssize_t written = 0;
   unsigned int space;
   unsigned int to_write;
   int err, i;
@@ -169,16 +168,17 @@ static ssize_t esl_oled_write(struct file *f,
   // Write to AXI FIFO
   for (i = 0; i < to_write; i += 4)
   {
-    iowrite32(*(u32 *)(inst->fifo_buf + i), inst->regs + TDFD);
+    // iowrite32(*(u32 *)(inst->fifo_buf + i), inst->regs + TDFD);
   }
 
   iowrite32(to_write, inst->regs + TLR);
 
   written += to_write;
   len -= to_write;
+
+  return written;
 }
-return written;
-}
+
 
 // definition of file operations
 struct file_operations esl_oled_fops = {
@@ -253,25 +253,25 @@ static int oled_on(struct platform_device *pdev)
   gpio = ioread32(inst->ctrl_regs);
 
   // sets vdd to 1
-  gpio = gpio | (3 << 1);
-  iowrite32(inst->ctrl_regs, gpio);
+  gpio = gpio | (1 << 3);
+  iowrite32(gpio, inst->ctrl_regs);
 
   // sets res# to low
   gpio = gpio & ~(1 << 1);
-  iowrite32(inst->ctrl_regs, gpio);
+  iowrite32(gpio, inst->ctrl_regs);
 
   // res switch delay
   usleep(5);
 
   // sets res# to high
   gpio = gpio | (1 << 1);
-  iowrite32(inst->ctrl_regs, gpio);
+  iowrite32(gpio, inst->ctrl_regs);
 
   // power on VCC
-  gpio = gpio | 1;
-  iowrite32(inst->ctrl_regs, gpio);
+  gpio = gpio | (1 << 2);
+  iowrite32(gpio, inst->ctrl_regs);
 
-  OLED_DISPLAY_ON
+  iowrite32(OLED_DISPLAY_ON ,inst->spi_regs + DTR);
 
   // turn on time
   usleep(100000);
@@ -285,20 +285,20 @@ static int oled_off(struct platform_device *pdev)
 
   uint32_t gpio;
 
-  OLED_DISPLAY_OFF
+  iowrite32(OLED_DISPLAY_OFF ,inst->spi_regs + DTR)
 
   gpio = ioread32(inst->ctrl_regs);
 
   // power off VCC
-  gpio = gpio & ~(1);
-  iowrite32(inst->ctrl_regs, gpio);
+  gpio = gpio & ~(1 << 2);
+  iowrite32(gpio, inst->ctrl_regs);
 
   // t_off time
   usleep(100000);
 
   // power off VDD
-  gpio = gpio & ~(3 << 1);
-  iowrite32(inst->ctrl_regs, gpio);
+  gpio = gpio & ~(1 << 3);
+  iowrite32(gpio, inst->ctrl_regs);
 
   return 0;
 }
