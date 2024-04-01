@@ -458,6 +458,8 @@ static int esl_oled_remove(struct platform_device *pdev)
 
   cdev_del(&inst->chr_dev);
 
+  cdev_del(&inst->chr_dev);
+
   // remove from list
   list_del(&inst->inst_list);
 
@@ -545,7 +547,7 @@ static int esl_oled_init(void)
 
   oled_chip_setup(addr);
 
-  printk(KERN_INFO "Sucessfully initialized OLED module\n");
+  printk(KERN_INFO "Sucessfully initialized OLED module\n\n");
 
   return 0;
 }
@@ -563,10 +565,12 @@ static void esl_oled_exit(void)
   platform_driver_unregister(&esl_oled_driver);
 
   printk(KERN_INFO "Sucessfully exited OLED module\n");
+  printk(KERN_INFO "Sucessfully exited OLED module\n");
 }
 
 module_init(esl_oled_init);
 module_exit(esl_oled_exit);
 
+MODULE_DESCRIPTION("ZedBoard OLED driver");
 MODULE_DESCRIPTION("ZedBoard OLED driver");
 MODULE_LICENSE("GPL");
