@@ -18,6 +18,9 @@
 #include <linux/kdev_t.h>
 #include <linux/fs.h>
 #include <asm/io.h>
+#include <linux/gpio.h>
+#include <linux/gpio/consumer.h>
+#include <linux/gpio/driver.h>
 
 #define DRIVER_NAME "esl-oled"
 
@@ -26,9 +29,8 @@
 static int SRR = 0x40;        // software reg reset
 static int SPICR = 0x60;      // spi cont reg
 static int SPISR = 0x64;      // spi stat reg
-static int SPIDTR = 0x68;     // spi data trans reg
+static int DTR = 0x68;     // spi data trans reg
 static int SPIDRR = 0x6C;     // spi data rec reg
-static int SPISSR = 0x70;     // slave select
 static int SPI_TXFIFO = 0x78; // occupancy tx
 static int SPI_RXFIFO = 0x74; // occupancy rx
 
@@ -64,15 +66,12 @@ struct esl_oled_instance
   void *__iomem spi_regs;  // oled registers
   void *__iomem ctrl_regs; // oled registers
 
-  struct oled_ctrl;
-
   struct mutex mutex; // lock/unlock
 
   /* Display Buffers */
   uint8_t disp_on;
   uint8_t *disp_buf;
 
-  struct spi_device *spi;
   struct cdev chr_dev; // character device
 
   dev_t devno;
@@ -203,6 +202,8 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
   unsigned long SLAVE_MODF = 0x00000002;
   unsigned long MODF = 0x00000001;
 
+  unsigned long ISR_reg;
+
   // Reads the interrupt status
   ISR_reg = ioread32(inst->spi_regs + IPISR);
 
@@ -235,7 +236,6 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
     // if half empty wait a little to fill back up
     printk(KERN_WARNING "tx fifo half empty!\n");
     usleep_range(1000, 2000);
-    continue;
   }
 
   return IRQ_HANDLED;
@@ -261,7 +261,7 @@ static int oled_on(struct platform_device *pdev)
   iowrite32(gpio, inst->ctrl_regs);
 
   // res switch delay
-  usleep(5);
+  usleep_range(3,10);
 
   // sets res# to high
   gpio = gpio | (1 << 1);
@@ -271,10 +271,10 @@ static int oled_on(struct platform_device *pdev)
   gpio = gpio | (1 << 2);
   iowrite32(gpio, inst->ctrl_regs);
 
-  iowrite32(OLED_DISPLAY_ON ,inst->spi_regs + DTR);
+  iowrite32(OLED_DISPLAY_ON, inst->spi_regs + DTR);
 
   // turn on time
-  usleep(100000);
+  usleep_range(100000,100001);
 
   return 0;
 }
@@ -285,7 +285,7 @@ static int oled_off(struct platform_device *pdev)
 
   uint32_t gpio;
 
-  iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + DTR)
+  iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + DTR);
 
   gpio = ioread32(inst->ctrl_regs);
 
@@ -294,7 +294,7 @@ static int oled_off(struct platform_device *pdev)
   iowrite32(gpio, inst->ctrl_regs);
 
   // t_off time
-  usleep(100000);
+  usleep_range(100000, 100001);
 
   // power off VDD
   gpio = gpio & ~(1 << 3);
@@ -307,7 +307,7 @@ static int oled_spi_setup(struct platform_device *pdev)
 {
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
-  unsigned long tx_rst, master_mode, CPOL, CPHA, SCK_SETUP;
+  unsigned long tx_rst, master_mode, CPOL, CPHA, SCK_SETUP, SPICR_SETUP;
   unsigned long TX_FIFO_ALL, DRR_NOT_EMPTY, ITR_EN;
 
   tx_rst = 0x00000010;
@@ -429,6 +429,7 @@ static int esl_oled_probe(struct platform_device *pdev)
     return PTR_ERR(dev);
   }
 
+
   // increment instance count
   driver_data.instance_count++;
 
@@ -438,8 +439,10 @@ static int esl_oled_probe(struct platform_device *pdev)
 
   inst->ctrl_regs = ctrl_reg_global;
 
-  oled_on();
-  oled_spi_setup();
+  oled_spi_setup(pdev);
+
+  oled_on(pdev);
+  
 
   return 0;
 }
@@ -448,10 +451,12 @@ static int esl_oled_remove(struct platform_device *pdev)
 {
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
-  oled_off();
+  oled_off(pdev);
 
   // cleanup and remove
   device_destroy(&esl_oled_class, inst->devno);
+
+  cdev_del(&inst->chr_dev);
 
   // remove from list
   list_del(&inst->inst_list);
@@ -540,7 +545,7 @@ static int esl_oled_init(void)
 
   oled_chip_setup(addr);
 
-  printk(KERN_INFO "Sucessfully initialized OLED module");
+  printk(KERN_INFO "Sucessfully initialized OLED module\n");
 
   return 0;
 }
@@ -557,11 +562,11 @@ static void esl_oled_exit(void)
   // plat driver unregister
   platform_driver_unregister(&esl_oled_driver);
 
-  printk(KERN_INFO "Sucessfully exited OLED module");
+  printk(KERN_INFO "Sucessfully exited OLED module\n");
 }
 
 module_init(esl_oled_init);
 module_exit(esl_oled_exit);
 
-MODULE_DESCRIPTION("ZedBoard Oled driver");
+MODULE_DESCRIPTION("ZedBoard OLED driver");
 MODULE_LICENSE("GPL");
