@@ -171,7 +171,7 @@ static ssize_t esl_oled_write(struct file *f,
     // iowrite32(*(u32 *)(inst->fifo_buf + i), inst->regs + TDFD);
   }
 
-  iowrite32(to_write, inst->regs + TLR);
+  // iowrite32(to_write, inst->regs + TLR);
 
   written += to_write;
   len -= to_write;
@@ -197,11 +197,11 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
   struct esl_oled_instance *inst = dev_id;
 
   // interrupt errors
-  TX_HALF_EMPTY = 0x00000040;
-  DTR_UNDERRUN = 0x00000004;
-  DTR_EMPTY = 0x00000003;
-  SLAVE_MODF = 0x00000002;
-  MODF = 0x00000001;
+  unsigned long TX_HALF_EMPTY = 0x00000040;
+  unsigned long DTR_UNDERRUN = 0x00000004;
+  unsigned long DTR_EMPTY = 0x00000003;
+  unsigned long SLAVE_MODF = 0x00000002;
+  unsigned long MODF = 0x00000001;
 
   // Reads the interrupt status
   ISR_reg = ioread32(inst->spi_regs + IPISR);
@@ -285,7 +285,7 @@ static int oled_off(struct platform_device *pdev)
 
   uint32_t gpio;
 
-  iowrite32(OLED_DISPLAY_OFF ,inst->spi_regs + DTR)
+  iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + DTR)
 
   gpio = ioread32(inst->ctrl_regs);
 
