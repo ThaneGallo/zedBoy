@@ -241,31 +241,69 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
   return IRQ_HANDLED;
 }
 
-static int oled_setup(struct platform_device *pdev)
+static int oled_on(struct platform_device *pdev)
 {
 
   // folows setup instructions as indicated in datasheet
 
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
-  iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + SPIDTR);
-  
-  //sets addressing mode
-  iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + SPIDTR);
+  uint32_t gpio;
 
-  //page addressing mode
-  //0x20 --> 0x10
+  gpio = ioread32(inst->ctrl_regs);
 
-  //0xBO 0xB7
-  // lower start column addr 0x00 to 0x0F
-  // upper start 0x10 0x1F
+  //sets vdd to 1
+  gpio = gpio | (3 << 1);
+  iowrite32(inst->ctrl_regs, gpio);
 
+  //sets res# to low
+  gpio = gpio & ~(1 << 1);
+  iowrite32(inst->ctrl_regs, gpio);
 
-  //display stary line
-  
+  //res switch delay
+  usleep(5);
+
+  //sets res# to high
+  gpio = gpio | (1 << 1);
+  iowrite32(inst->ctrl_regs, gpio);
+
+  //power on VCC
+  gpio = gpio | 1;
+  iowrite32(inst->ctrl_regs, gpio);
+
+  OLED_DISPLAY_ON
+
+  //turn on time
+  usleep(100000);
 
   return 0;
 }
+
+static int oled_off(struct platform_device *pdev)
+{
+  struct esl_oled_instance *inst = platform_get_drvdata(pdev);
+
+  uint32_t gpio;
+
+  OLED_DISPLAY_OFF
+
+  gpio = ioread32(inst->ctrl_regs);
+
+  //power off VCC
+  gpio = gpio & ~(1);
+  iowrite32(inst->ctrl_regs, gpio);
+
+  //t_off time
+  usleep(100000);
+
+  //power off VDD
+  gpio = gpio & ~(3 << 1);
+  iowrite32(inst->ctrl_regs, gpio);
+ 
+  return 0;
+}
+
+
 
 static int oled_spi_setup(struct platform_device *pdev)
 {
@@ -372,9 +410,9 @@ static int esl_oled_probe(struct platform_device *pdev)
   inst->devno = MKDEV(MAJOR(driver_data.first_devno),
                       driver_data.instance_count);
 
-  printk(KERN_INFO "Device probed with devno #%u", inst->devno);
-  printk(KERN_INFO "Device probed with inst count #%u", driver_data.instance_count);
-  printk(KERN_INFO "Device probed with address #%p", inst->regs);
+  // printk(KERN_INFO "Device probed with devno #%u", inst->devno);
+  // printk(KERN_INFO "Device probed with inst count #%u", driver_data.instance_count);
+  // printk(KERN_INFO "Device probed with address #%p", inst->regs);
 
   cdev_init(&inst->chr_dev, &esl_oled_fops);
   inst->chr_dev.owner = THIS_MODULE;
@@ -393,16 +431,18 @@ static int esl_oled_probe(struct platform_device *pdev)
     return PTR_ERR(dev);
   }
 
-  printk(KERN_INFO "after device_create");
-
   // increment instance count
   driver_data.instance_count++;
 
   // put into list
   INIT_LIST_HEAD(&inst->inst_list);
   list_add(&inst->inst_list, &driver_data.instance_list);
+  
+  inst->ctrl_regs = ctrl_reg_global
 
+  oled_on();
   oled_spi_setup();
+ 
 
   return 0;
 }
@@ -410,12 +450,16 @@ static int esl_oled_probe(struct platform_device *pdev)
 static int esl_oled_remove(struct platform_device *pdev)
 {
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
+  
+  oled_off();
 
   // cleanup and remove
   device_destroy(&esl_oled_class, inst->devno);
 
   // remove from list
   list_del(&inst->inst_list);
+
+  
 
   return 0;
 }
@@ -461,8 +505,7 @@ static int oled_chip_setup(unsigned long addr)
   dev = chip->parent;
   pdev = to_platform_device(dev);
 
-  // printk(KERN_INFO MODULE_NAME ": Module loaded with led_gpio_base = %u, switch_gpio_base = %u\n", led_gpio_base, switch_gpio_base);
-
+ 
   res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
   if (res == NULL)
   {
