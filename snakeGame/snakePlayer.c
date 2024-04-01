@@ -10,7 +10,7 @@
 #include <asm/io.h>
 
 // #include <time.h>
-// #include "Snake.h"
+#include "Snake.h"
 
 // Module Name
 #define MODULE_NAME "snakePlayer"
@@ -34,7 +34,7 @@ static void __iomem *btn_regs; // BTN GPIO registers
 static unsigned int btn_gpio_base = 901;
 
 // snake game
-// static SnakeGame game;
+static SnakeGame game;
 
 // get current switch states
 static unsigned int get_button_states(void)
@@ -65,6 +65,7 @@ static void initialize_gpio(void)
 static irqreturn_t btn_irq_handler(int irq, void* dev_id)
 {
     unsigned int states;
+    enum Direction dir;
 
     // Debugging message
     // printk(KERN_INFO "Button IRQ handler\n");
@@ -75,24 +76,33 @@ static irqreturn_t btn_irq_handler(int irq, void* dev_id)
 
     if (states & 0x01) {
         printk(KERN_INFO "MIDDLE\n");
+        dir = STOP;
     }
 
     if (states & 0x02) {
         printk(KERN_INFO "DOWN\n");
+        dir = DOWN;
     }
 
     if (states & 0x04) {
         printk(KERN_INFO "LEFT\n");
+        dir = LEFT;
     }
 
     if (states & 0x08) {
         printk(KERN_INFO "RIGHT\n");
+        dir = RIGHT;
     }
 
     if (states & 0x10) {
         printk(KERN_INFO "UP\n");
+        dir = UP;
     }
 
+    // temp game logic
+    SnakeGame_input(&game, dir);
+    SnakeGame_logic(&game);
+    SnakeGame_draw(&game);
 
     // WRITE TO OLED DRIVER INFO HERE
 
@@ -128,7 +138,8 @@ static void init_snake_game(void)
 {
     // Initialize snake game
     // srand(time(0));
-    // SnakeGame_setup(&game);
+    SnakeGame_setup(&game);
+    SnakeGame_draw(&game);
 }
 
 // initialize module
@@ -141,7 +152,7 @@ static int mymod_init(void)
     struct gpio_desc* gdesc;
     struct resource *res;
 
-    // printk(KERN_INFO "btn_gpio_base = %u\n", btn_gpio_base);
+    printk(KERN_INFO "btn_gpio_base = %u\n", btn_gpio_base);
 
     // find GPIO description by GPIO number passed
     gdesc = gpio_to_desc(btn_gpio_base);
@@ -228,6 +239,8 @@ static void mymod_exit(void)
 
   // Unmap memory region
   iounmap(btn_regs);
+
+  printk(KERN_INFO "Snake Player module removed\n");
 }
 
 // declare initialization function

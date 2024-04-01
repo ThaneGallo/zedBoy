@@ -1,4 +1,5 @@
-obj-m := snakePlayer.o
+obj-m := snakeGame.o
+snakeGame-objs := snakePlayer.o Snake.o
 ccflags-y += -g -DDEBUG
 ESL_KERNEL_VERSION ?= 5.10.0-esl
 ESL_ZEDBOARD_IP ?= qemu
@@ -16,9 +17,7 @@ INCLUDE_DIRS := $(OECORE_TARGET_SYSROOT)/usr/include/
 
 MODULE_OBJ:=$(obj-m:.o=.ko)
 
-
 all: modules
-
 
 modules:
 	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KERNEL_SRC) M=$(SRC) EXTRA_CFLAGS="-I$(INCLUDE_DIRS) -g -O0" modules
