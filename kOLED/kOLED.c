@@ -29,7 +29,7 @@
 static int SRR = 0x40;        // software reg reset
 static int SPICR = 0x60;      // spi cont reg
 static int SPISR = 0x64;      // spi stat reg
-static int DTR = 0x68;     // spi data trans reg
+static int DTR = 0x68;        // spi data trans reg
 static int SPIDRR = 0x6C;     // spi data rec reg
 static int SPI_TXFIFO = 0x78; // occupancy tx
 static int SPI_RXFIFO = 0x74; // occupancy rx
@@ -39,13 +39,7 @@ static int DGIER = 0x1C; //  dev global ier
 static int IPISR = 0x20; // ip isr
 static int IPIER = 0x28; // ip ier
 
-#define DISPLAY_BUF_SZ 512 /* 32 x 128 bit monochrome  == 512 bytes        */
-#define MAX_LINE_LEN 16    /* 128 bits wide and current char width is 8 bit */
-#define MAX_ROW 4
-#define OLED_MAX_PG_CNT 4 /* number of display pages in OLED controller */
-#define OLED_CONTROLLER_PG_SZ 128
-#define OLED_CONTROLLER_CMD 0
-#define OLED_CONTROLLER_DATA 1
+static void __iomem *ctrl_regs_global;
 
 /* commands for the OLED display controller	*/
 #define OLED_SET_PG_ADDR 0x22
@@ -59,7 +53,7 @@ static int IPIER = 0x28; // ip ier
 
 #define OLED_CTRL_REG 0x41200000
 
-static void __iomem *ctrl_reg_global;
+    static void __iomem *ctrl_reg_global;
 
 struct esl_oled_instance
 {
@@ -178,7 +172,6 @@ static ssize_t esl_oled_write(struct file *f,
   return written;
 }
 
-
 // definition of file operations
 struct file_operations esl_oled_fops = {
     .write = esl_oled_write,
@@ -261,7 +254,7 @@ static int oled_on(struct platform_device *pdev)
   iowrite32(gpio, inst->ctrl_regs);
 
   // res switch delay
-  usleep_range(3,10);
+  usleep_range(3, 10);
 
   // sets res# to high
   gpio = gpio | (1 << 1);
@@ -274,7 +267,7 @@ static int oled_on(struct platform_device *pdev)
   iowrite32(OLED_DISPLAY_ON, inst->spi_regs + DTR);
 
   // turn on time
-  usleep_range(100000,100001);
+  usleep_range(100000, 100001);
 
   return 0;
 }
@@ -344,6 +337,7 @@ static int esl_oled_probe(struct platform_device *pdev)
   int err;
   struct resource *res;
   struct device *dev;
+  static void __iomem *mapped_address;
 
   dev_t devno = MKDEV(driver_data.first_devno, driver_data.instance_count);
 
@@ -429,7 +423,6 @@ static int esl_oled_probe(struct platform_device *pdev)
     return PTR_ERR(dev);
   }
 
-
   // increment instance count
   driver_data.instance_count++;
 
@@ -437,12 +430,11 @@ static int esl_oled_probe(struct platform_device *pdev)
   INIT_LIST_HEAD(&inst->inst_list);
   list_add(&inst->inst_list, &driver_data.instance_list);
 
-  inst->ctrl_regs = ctrl_reg_global;
+  inst->ctrl_regs = ctrl_regs_global;
 
   oled_spi_setup(pdev);
 
   oled_on(pdev);
-  
 
   return 0;
 }
@@ -476,57 +468,9 @@ static struct platform_driver esl_oled_driver = {
     },
 };
 
-static int oled_chip_setup(unsigned long addr)
-{
-
-  int err;
-  struct gpio_chip *chip;
-  struct platform_device *pdev;
-  struct device *dev;
-  struct gpio_desc *gdesc;
-  struct resource *res;
-
-  // find GPIO description by GPIO number passed
-  gdesc = gpio_to_desc(addr);
-  if (!gdesc)
-  {
-    printk("error getting GPIO description for oled!\n");
-    return -ENODEV;
-  }
-
-  // get chip of switches gpio
-  chip = gpiod_to_chip(gdesc);
-  if (!chip)
-  {
-    printk("error getting oled GPIO chip\n");
-    return -ENODEV;
-  }
-
-  // retrieve original platform device from gpio chip,
-  // now we can extract information from the device tree node
-  dev = chip->parent;
-  pdev = to_platform_device(dev);
-
-  res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-  if (res == NULL)
-  {
-    return -ENOMEM;
-  }
-
-  ctrl_reg_global = devm_ioremap(dev, res->start, resource_size(res));
-
-  if (IS_ERR(ctrl_reg_global))
-  {
-    return -PTR_ERR(ctrl_reg_global);
-  }
-
-  return 0;
-}
-
 static int esl_oled_init(void)
 {
   int err;
-  unsigned long addr = 0x41200000;
 
   // alocate character device region
   err = alloc_chrdev_region(&driver_data.first_devno, 0, 1, "zedoled");
@@ -545,7 +489,15 @@ static int esl_oled_init(void)
 
   platform_driver_register(&esl_oled_driver);
 
-  oled_chip_setup(addr);
+
+  ctrl_regs_global = ioremap(OLED_CTRL_REG, sizeof(u32));
+
+  if (!ctrl_regs_global)
+  {
+    printk(KERN_ERR "Failed to map physical address\n");
+    return -ENOMEM;
+  }
+
 
   printk(KERN_INFO "Sucessfully initialized OLED module\n\n");
 
@@ -554,6 +506,9 @@ static int esl_oled_init(void)
 
 static void esl_oled_exit(void)
 {
+
+  //unmaps control registers
+  iounmap(ctrl_regs_global);
 
   // free character device region
   unregister_chrdev_region(driver_data.first_devno, 1);
@@ -565,12 +520,10 @@ static void esl_oled_exit(void)
   platform_driver_unregister(&esl_oled_driver);
 
   printk(KERN_INFO "Sucessfully exited OLED module\n");
-  printk(KERN_INFO "Sucessfully exited OLED module\n");
 }
 
 module_init(esl_oled_init);
 module_exit(esl_oled_exit);
 
-MODULE_DESCRIPTION("ZedBoard OLED driver");
 MODULE_DESCRIPTION("ZedBoard OLED driver");
 MODULE_LICENSE("GPL");
