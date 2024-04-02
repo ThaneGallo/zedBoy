@@ -30,9 +30,8 @@ static int SRR = 0x40;        // software reg reset
 static int SPICR = 0x60;      // spi cont reg
 static int SPISR = 0x64;      // spi stat reg
 static int DTR = 0x68;        // spi data trans reg
-static int SPIDRR = 0x6C;     // spi data rec reg
+static int DRR = 0x6C;     // spi data rec reg
 static int SPI_TXFIFO = 0x78; // occupancy tx
-static int SPI_RXFIFO = 0x74; // occupancy rx
 
 // interrupts
 static int DGIER = 0x1C; //  dev global ier
@@ -50,6 +49,7 @@ static void __iomem *ctrl_regs_global;
 #define OLED_SET_SEGMENT_REMAP 0xA1
 #define OLED_SET_COM_DIR 0xC8
 #define OLED_SET_COM_PINS 0xDA
+#define DISPLAY_BUFFER 0xA4
 
 #define OLED_CTRL_REG 0x41200000
 
@@ -139,35 +139,38 @@ static ssize_t esl_oled_write(struct file *f,
 {
 
   struct esl_oled_instance *inst = file_to_instance(f);
-  ssize_t written = 0;
-  unsigned int space;
-  unsigned int to_write;
-  int err, i;
+  unsigned long gpio;
+  int space;
+  
+  gpio = ioread32(inst->ctrl_regs);
 
-  if (!inst)
-  {
-    // instance not found
+  //sets to recieve data
+  gpio = gpio | (1);
+  iowrite32(gpio, inst->ctrl_regs);
+
+  if(!inst){
     return -ENOENT;
   }
 
-  to_write = min((size_t)space, len);
-
-  // Copy from user space to kernel buffer
-  if (copy_from_user(inst->fifo_buf, buf + written, to_write))
+   while (len > 0)
   {
-    return -EFAULT;
+    space = ioread32(inst->spi_regs + SPI_TXFIFO);
+
+    if(space == 0){
+      
+    }
+
   }
 
-  // Write to AXI FIFO
-  for (i = 0; i < to_write; i += 4)
-  {
-    // iowrite32(*(u32 *)(inst->fifo_buf + i), inst->regs + TDFD);
-  }
 
-  // iowrite32(to_write, inst->regs + TLR);
+  //sets to recieve command
+  gpio = gpio & ~(1);
+  iowrite32(gpio, inst->ctrl_regs);
 
-  written += to_write;
-  len -= to_write;
+
+  //writes full buffer to OLED
+  iowrite32(OLED_DISPLAY_ON, inst->spi_regs + DTR);
+
 
   return written;
 }
@@ -236,7 +239,6 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
 
 static int oled_on(struct platform_device *pdev)
 {
-
   // folows setup instructions as indicated in datasheet
 
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
@@ -264,6 +266,13 @@ static int oled_on(struct platform_device *pdev)
   gpio = gpio | (1 << 2);
   iowrite32(gpio, inst->ctrl_regs);
 
+  //data = 1
+  //command = 0
+
+  // set input to command
+  gpio = gpio & ~(1);
+  iowrite32(gpio, inst->ctrl_regs);
+
   iowrite32(OLED_DISPLAY_ON, inst->spi_regs + DTR);
 
   // turn on time
@@ -277,6 +286,10 @@ static int oled_off(struct platform_device *pdev)
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
   uint32_t gpio;
+
+   // set input to command
+  gpio = gpio & ~(1);
+  iowrite32(gpio, inst->ctrl_regs);
 
   iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + DTR);
 
@@ -430,11 +443,11 @@ static int esl_oled_probe(struct platform_device *pdev)
   INIT_LIST_HEAD(&inst->inst_list);
   list_add(&inst->inst_list, &driver_data.instance_list);
 
-  inst->ctrl_regs = ctrl_regs_global;
+  inst->ctrl_regs = ctrl_regs_global
 
-  oled_spi_setup(pdev);
+  // oled_spi_setup(pdev);
 
-  oled_on(pdev);
+  // oled_on(pdev);
 
   return 0;
 }
@@ -443,12 +456,11 @@ static int esl_oled_remove(struct platform_device *pdev)
 {
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
-  oled_off(pdev);
+  // oled_off(pdev);
 
   // cleanup and remove
   device_destroy(&esl_oled_class, inst->devno);
 
-  cdev_del(&inst->chr_dev);
 
   cdev_del(&inst->chr_dev);
 
@@ -490,7 +502,8 @@ static int esl_oled_init(void)
   platform_driver_register(&esl_oled_driver);
 
 
-  ctrl_regs_global = ioremap(OLED_CTRL_REG, sizeof(u32));
+//sets tri state control regs to ctrl reg global
+  ctrl_regs_global = ioremap(OLED_CTRL_REG + 0x000C, sizeof(u32));
 
   if (!ctrl_regs_global)
   {
