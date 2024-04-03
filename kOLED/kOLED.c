@@ -49,11 +49,10 @@ static void __iomem *ctrl_regs_global;
 #define OLED_SET_SEGMENT_REMAP 0xA1
 #define OLED_SET_COM_DIR 0xC8
 #define OLED_SET_COM_PINS 0xDA
+
 #define DISPLAY_BUFFER 0xA4
 
 #define OLED_CTRL_REG 0x41200000
-
-    static void __iomem *ctrl_reg_global;
 
 struct esl_oled_instance
 {
@@ -141,6 +140,7 @@ static ssize_t esl_oled_write(struct file *f,
   struct esl_oled_instance *inst = file_to_instance(f);
   unsigned long gpio;
   int space;
+  ssize_t written;
   
   gpio = ioread32(inst->ctrl_regs);
 
@@ -237,11 +237,9 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
   return IRQ_HANDLED;
 }
 
-static int oled_on(struct platform_device *pdev)
+static int oled_on(struct esl_oled_instance *inst)
 {
   // folows setup instructions as indicated in datasheet
-
-  struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
   uint32_t gpio;
 
@@ -281,19 +279,84 @@ static int oled_on(struct platform_device *pdev)
   return 0;
 }
 
-static int oled_off(struct platform_device *pdev)
+static int oled_setup(struct esl_oled_instance *inst){
+  uint32_t gpio;
+
+  gpio = ioread32(inst->ctrl_regs);
+
+  // set input to command
+  gpio = gpio & ~(1);
+  iowrite32(gpio, inst->ctrl_regs);
+
+  //set display off
+  iowrite32(0xAE, inst->spi_regs + DTR);
+
+
+  // set display clock divide ratio
+  iowrite32(0xD5, inst->spi_regs + DTR);
+  iowrite32(0x80, inst->spi_regs + DTR);
+
+  // set multiplex ratio
+  iowrite32(0xA8, inst->spi_regs + DTR);
+  iowrite32(0x1F, inst->spi_regs + DTR);
+
+  // set display offset 
+  iowrite32(0xD3, inst->spi_regs + DTR);
+  iowrite32(0x00, inst->spi_regs + DTR);
+
+  // set display start line 
+  iowrite32(0x40, inst->spi_regs + DTR);
+  
+  // set charge pump
+  iowrite32(0x8D, inst->spi_regs + DTR);
+  iowrite32(0x10, inst->spi_regs + DTR);
+  
+  // set segment remap
+  iowrite32(0xA1, inst->spi_regs + DTR);
+  
+  // set COM output scan direction
+  iowrite32(0xC8, inst->spi_regs + DTR);
+  
+  // set com pins / hardware config
+  iowrite32(0xDA, inst->spi_regs + DTR);
+  iowrite32(0x02, inst->spi_regs + DTR);
+
+  // set contrast control
+  iowrite32(0x81, inst->spi_regs + DTR);
+  iowrite32(0x8F, inst->spi_regs + DTR);
+  
+  // set pre-charge period
+  iowrite32(0xD9, inst->spi_regs + DTR);
+  iowrite32(0x22, inst->spi_regs + DTR);
+
+  //set VCOMH delselect level
+  iowrite32(0xDB, inst->spi_regs + DTR);
+  iowrite32(0x40, inst->spi_regs + DTR);
+
+  //entire display on
+  iowrite32(0xA4, inst->spi_regs + DTR);
+
+  //normal display / inverse
+  iowrite32(0xA6, inst->spi_regs + DTR);
+
+  return 0;
+
+}
+
+static int oled_off(struct esl_oled_instance *inst)
 {
-  struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
   uint32_t gpio;
+
+  gpio = ioread32(inst->ctrl_regs);
+
 
    // set input to command
   gpio = gpio & ~(1);
   iowrite32(gpio, inst->ctrl_regs);
-
   iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + DTR);
 
-  gpio = ioread32(inst->ctrl_regs);
+
 
   // power off VCC
   gpio = gpio & ~(1 << 2);
@@ -309,15 +372,14 @@ static int oled_off(struct platform_device *pdev)
   return 0;
 }
 
-static int oled_spi_setup(struct platform_device *pdev)
+static int oled_spi_setup(struct esl_oled_instance *inst)
 {
-  struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
   unsigned long tx_rst, master_mode, CPOL, CPHA, SCK_SETUP, SPICR_SETUP;
   unsigned long TX_FIFO_ALL, DRR_NOT_EMPTY, ITR_EN;
 
-  tx_rst = 0x00000010;
-  master_mode = 0x00000002;
+  tx_rst = 1 << 5;
+  master_mode = 1 << 2;
 
   // clocking selection
   CPOL = 0x00000000;
@@ -339,7 +401,7 @@ static int oled_spi_setup(struct platform_device *pdev)
   iowrite32(SPICR_SETUP, inst->spi_regs + SPICR);
 
   // interrupt enable
-  iowrite32(ITR_EN, inst->spi_regs + DGIER);
+  // iowrite32(ITR_EN, inst->spi_regs + DGIER);
 
   return 0;
 }
@@ -350,7 +412,6 @@ static int esl_oled_probe(struct platform_device *pdev)
   int err;
   struct resource *res;
   struct device *dev;
-  static void __iomem *mapped_address;
 
   dev_t devno = MKDEV(driver_data.first_devno, driver_data.instance_count);
 
@@ -443,11 +504,23 @@ static int esl_oled_probe(struct platform_device *pdev)
   INIT_LIST_HEAD(&inst->inst_list);
   list_add(&inst->inst_list, &driver_data.instance_list);
 
-  inst->ctrl_regs = ctrl_regs_global
 
-  // oled_spi_setup(pdev);
+//sets tri state control regs to ctrl reg global
+  inst->ctrl_regs = ioremap(OLED_CTRL_REG + 0xC, 0x128);
 
-  // oled_on(pdev);
+  if (!inst->ctrl_regs)
+  {
+    printk(KERN_ERR "Failed to map physical address\n");
+    return -ENOMEM;
+  }
+
+
+  oled_spi_setup(inst);
+
+  oled_setup(inst);
+
+  oled_on(inst);
+  
 
   return 0;
 }
@@ -456,7 +529,7 @@ static int esl_oled_remove(struct platform_device *pdev)
 {
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
-  // oled_off(pdev);
+  oled_off(inst);
 
   // cleanup and remove
   device_destroy(&esl_oled_class, inst->devno);
@@ -500,16 +573,6 @@ static int esl_oled_init(void)
   }
 
   platform_driver_register(&esl_oled_driver);
-
-
-//sets tri state control regs to ctrl reg global
-  ctrl_regs_global = ioremap(OLED_CTRL_REG + 0x000C, sizeof(u32));
-
-  if (!ctrl_regs_global)
-  {
-    printk(KERN_ERR "Failed to map physical address\n");
-    return -ENOMEM;
-  }
 
 
   printk(KERN_INFO "Sucessfully initialized OLED module\n\n");
