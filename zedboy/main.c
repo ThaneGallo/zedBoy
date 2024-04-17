@@ -138,6 +138,9 @@ void runConsole(unsigned int *switchregs, unsigned int *btnregs) {
                 isGameSelected = 1;
 
                 // gameSetups[0]();
+                games[0]();
+                // print whatevers in games[0]
+                // printf('%s\n', games[0]);
             }
 
             usleep(100000);
@@ -159,7 +162,18 @@ void runConsole(unsigned int *switchregs, unsigned int *btnregs) {
                 isConsoleRunning = 0;
             }
 
-            // gameTicks[0](up);
+            int direction = 0;
+            if (left == 1) {
+                direction = LEFT;
+            } else if (right == 1) {
+                direction = RIGHT;
+            } else if (up == 1) {
+                direction = UP;
+            } else if (down == 1) {
+                direction = DOWN;
+            }
+
+            gameTicks[0](direction);
 
             usleep(100000);
         }

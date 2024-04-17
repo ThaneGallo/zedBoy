@@ -9,8 +9,16 @@
 typedef void (*GameFunction)();
 typedef void (*GameFunctionTick)(int);
 
-GameFunction gameSetups[9];
-GameFunctionTick gameTicks[9];
+// GameFunction gameSetups[9];
+// GameFunctionTick gameTicks[9];
+
+// Declare an array of function pointers with a predefined maximum size
+#define MAX_GAMES 10
+extern int game_count;  // to track the number of games added
+extern int gameTick_count;  // to track the number of game ticks added
+
+extern GameFunction games[MAX_GAMES];
+extern GameFunctionTick gameTicks[MAX_GAMES];
 
 enum Direction {
     STOP = 0,
