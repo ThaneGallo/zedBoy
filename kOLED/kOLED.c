@@ -26,19 +26,19 @@
 
 // docs.xilinx.com/r/en-US/pg153-axi-quad-spi/Port-Descriptions
 // spi register space
-static int SRR = 0x40;        // software reg reset
-static int SPICR = 0x60;      // spi cont reg
-static int SPISR = 0x64;      // spi stat reg
-static int DTR = 0x68;        // spi data trans reg
-static int DRR = 0x6C;     // spi data rec reg
-static int SPI_TXFIFO = 0x78; // occupancy tx
+#define SRR 0x40        // software reg reset
+#define SPICR = 0x60;      // spi cont reg
+#define SPISR = 0x64;      // spi stat reg
+#define DTR = 0x68;        // spi data trans reg
+#define DRR = 0x6C;     // spi data rec reg
+#define SPI_TXFIFO = 0x78; // occupancy tx
 
 // interrupts
 static int DGIER = 0x1C; //  dev global ier
 static int IPISR = 0x20; // ip isr
 static int IPIER = 0x28; // ip ier
 
-static void __iomem *ctrl_regs_global;
+static void __iomem *gpio_regs_global;
 
 /* commands for the OLED display controller	*/
 #define OLED_SET_PG_ADDR 0x22
@@ -53,11 +53,13 @@ static void __iomem *ctrl_regs_global;
 #define DISPLAY_BUFFER 0xA4
 
 #define OLED_CTRL_REG 0x41200000
+#define GPIO_DATA 0x0008
+#define GPIO_TRI 0x000C
 
 struct esl_oled_instance
 {
   void *__iomem spi_regs;  // oled registers
-  void *__iomem ctrl_regs; // oled registers
+  void *__iomem gpio_regs; // oled registers
 
   struct mutex mutex; // lock/unlock
 
@@ -142,11 +144,11 @@ static ssize_t esl_oled_write(struct file *f,
   int space;
   ssize_t written;
   
-  gpio = ioread32(inst->ctrl_regs);
+  gpio = ioread32(inst->gpio_regs + GPIO_DATA);
 
   //sets to recieve data
   gpio = gpio | (1);
-  iowrite32(gpio, inst->ctrl_regs);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
 
   if(!inst){
     return -ENOENT;
@@ -165,7 +167,7 @@ static ssize_t esl_oled_write(struct file *f,
 
   //sets to recieve command
   gpio = gpio & ~(1);
-  iowrite32(gpio, inst->ctrl_regs);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
 
 
   //writes full buffer to OLED
@@ -192,7 +194,7 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
   struct esl_oled_instance *inst = dev_id;
 
   // interrupt errors
-  unsigned long TX_HALF_EMPTY = 0x00000040;
+  unsigned long TX_EMPTY = 0x00000040;
   unsigned long DTR_UNDERRUN = 0x00000004;
   unsigned long DTR_EMPTY = 0x00000003;
   unsigned long SLAVE_MODF = 0x00000002;
@@ -240,41 +242,56 @@ static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
 static int oled_on(struct esl_oled_instance *inst)
 {
   // folows setup instructions as indicated in datasheet
-
   uint32_t gpio;
 
-  gpio = ioread32(inst->ctrl_regs);
+  gpio = ioread32(inst->gpio_regs + GPIO_DATA);
+
+  printk(KERN_INFO "%x\n", gpio);
 
   // sets vdd to 1
-  gpio = gpio | (1 << 3);
-  iowrite32(gpio, inst->ctrl_regs);
+  gpio = gpio & ~(1 << 3);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
+
+  printk(KERN_INFO "%x\n", gpio);
 
   // sets res# to low
   gpio = gpio & ~(1 << 1);
-  iowrite32(gpio, inst->ctrl_regs);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
+  printk(KERN_INFO "%x\n", gpio);
 
   // res switch delay
-  usleep_range(3, 10);
+  usleep_range(1000,1000);
 
   // sets res# to high
   gpio = gpio | (1 << 1);
-  iowrite32(gpio, inst->ctrl_regs);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
+  printk(KERN_INFO "%x\n", gpio);
+
+  // res switch delay
+  usleep_range(10000,10000);
+
+  // sets res# to low
+  gpio = gpio & ~(1 << 1);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
+  printk(KERN_INFO "%x\n", gpio);
 
   // power on VCC
-  gpio = gpio | (1 << 2);
-  iowrite32(gpio, inst->ctrl_regs);
+  gpio = gpio & ~(1 << 2);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
+  printk(KERN_INFO "%x\n", gpio);
 
   //data = 1
   //command = 0
 
   // set input to command
   gpio = gpio & ~(1);
-  iowrite32(gpio, inst->ctrl_regs);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
+  printk(KERN_INFO "%x\n", gpio);
 
-  iowrite32(OLED_DISPLAY_ON, inst->spi_regs + DTR);
+  iowrite32(0xAE, inst->spi_regs + DTR);
 
   // turn on time
-  usleep_range(100000, 100001);
+  usleep_range(100000, 100000);
 
   return 0;
 }
@@ -282,15 +299,14 @@ static int oled_on(struct esl_oled_instance *inst)
 static int oled_setup(struct esl_oled_instance *inst){
   uint32_t gpio;
 
-  gpio = ioread32(inst->ctrl_regs);
+  gpio = ioread32(inst->gpio_regs + GPIO_DATA);
 
   // set input to command
   gpio = gpio & ~(1);
-  iowrite32(gpio, inst->ctrl_regs);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
 
   //set display off
   iowrite32(0xAE, inst->spi_regs + DTR);
-
 
   // set display clock divide ratio
   iowrite32(0xD5, inst->spi_regs + DTR);
@@ -348,26 +364,26 @@ static int oled_off(struct esl_oled_instance *inst)
 
   uint32_t gpio;
 
-  gpio = ioread32(inst->ctrl_regs);
+  gpio = ioread32(inst->gpio_regs);
 
 
    // set input to command
   gpio = gpio & ~(1);
-  iowrite32(gpio, inst->ctrl_regs);
+  iowrite32(gpio, inst->gpio_regs);
   iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + DTR);
 
 
 
   // power off VCC
   gpio = gpio & ~(1 << 2);
-  iowrite32(gpio, inst->ctrl_regs);
+  iowrite32(gpio, inst->gpio_regs);
 
   // t_off time
   usleep_range(100000, 100001);
 
   // power off VDD
   gpio = gpio & ~(1 << 3);
-  iowrite32(gpio, inst->ctrl_regs);
+  iowrite32(gpio, inst->gpio_regs);
 
   return 0;
 }
@@ -375,11 +391,12 @@ static int oled_off(struct esl_oled_instance *inst)
 static int oled_spi_setup(struct esl_oled_instance *inst)
 {
 
-  unsigned long tx_rst, master_mode, CPOL, CPHA, SCK_SETUP, SPICR_SETUP;
+  unsigned long tx_rst, master_mode, CPOL, SPE, CPHA, SCK_SETUP, SPICR_SETUP;
   unsigned long TX_FIFO_ALL, DRR_NOT_EMPTY, ITR_EN;
 
   tx_rst = 1 << 5;
   master_mode = 1 << 2;
+  SPE = 1 << 1;
 
   // clocking selection
   CPOL = 0x00000000;
@@ -392,7 +409,7 @@ static int oled_spi_setup(struct esl_oled_instance *inst)
   TX_FIFO_ALL = 0x000000AF;
   ITR_EN = DRR_NOT_EMPTY | TX_FIFO_ALL;
 
-  SPICR_SETUP = SCK_SETUP | tx_rst | master_mode;
+  SPICR_SETUP = SCK_SETUP | tx_rst | master_mode | SPE;
 
   // software reset
   iowrite32(0x0000000a, inst->spi_regs + SRR);
@@ -401,7 +418,77 @@ static int oled_spi_setup(struct esl_oled_instance *inst)
   iowrite32(SPICR_SETUP, inst->spi_regs + SPICR);
 
   // interrupt enable
-  // iowrite32(ITR_EN, inst->spi_regs + DGIER);
+  iowrite32(ITR_EN, inst->spi_regs + DGIER);
+
+  return 0;
+}
+
+static int oled_setup_full(struct esl_oled_instance *inst){
+
+  uint32_t gpio;
+
+  gpio = ioread32(inst->gpio_regs + GPIO_DATA);
+
+  // sets vdd to 1
+  gpio = gpio & ~(1 << 3);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
+
+  //set display off
+  iowrite32(0xAE, inst->spi_regs + DTR);
+
+  // set display clock divide ratio
+  iowrite32(0xD5, inst->spi_regs + DTR);
+  iowrite32(0x80, inst->spi_regs + DTR);
+
+  // set multiplex ratio
+  iowrite32(0xA8, inst->spi_regs + DTR);
+  iowrite32(0x1F, inst->spi_regs + DTR);
+
+  // set display offset 
+  iowrite32(0xD3, inst->spi_regs + DTR);
+  iowrite32(0x00, inst->spi_regs + DTR);
+
+  // set display start line 
+  iowrite32(0x40, inst->spi_regs + DTR);
+  
+  // set charge pump
+  iowrite32(0x8D, inst->spi_regs + DTR);
+  iowrite32(0x10, inst->spi_regs + DTR);
+  
+  // set segment remap
+  iowrite32(0xA1, inst->spi_regs + DTR);
+  
+  // set COM output scan direction
+  iowrite32(0xC8, inst->spi_regs + DTR);
+  
+  // set com pins / hardware config
+  iowrite32(0xDA, inst->spi_regs + DTR);
+  iowrite32(0x02, inst->spi_regs + DTR);
+
+  // set contrast control
+  iowrite32(0x81, inst->spi_regs + DTR);
+  iowrite32(0x8F, inst->spi_regs + DTR);
+  
+  // set pre-charge period
+  iowrite32(0xD9, inst->spi_regs + DTR);
+  iowrite32(0x22, inst->spi_regs + DTR);
+
+  //set VCOMH delselect level
+  iowrite32(0xDB, inst->spi_regs + DTR);
+  iowrite32(0x40, inst->spi_regs + DTR);
+
+  //normal display / inverse
+  iowrite32(0xA6, inst->spi_regs + DTR);
+
+  // power on VCC
+  gpio = gpio & ~(1 << 2);
+  iowrite32(gpio, inst->gpio_regs + GPIO_DATA);
+
+  usleep_range(100000, 100000);
+
+    //entire display on
+  iowrite32(0xA4, inst->spi_regs + DTR);
+
 
   return 0;
 }
@@ -412,8 +499,6 @@ static int esl_oled_probe(struct platform_device *pdev)
   int err;
   struct resource *res;
   struct device *dev;
-
-  dev_t devno = MKDEV(driver_data.first_devno, driver_data.instance_count);
 
   // allocate instance
   inst = devm_kzalloc(&pdev->dev, sizeof(struct esl_oled_instance),
@@ -442,35 +527,37 @@ static int esl_oled_probe(struct platform_device *pdev)
   }
 
   // get fifo depth
-  err = of_property_read_u32(pdev->dev.of_node, "fifo-size",
-                             &inst->fifo_size);
-  if (err)
-  {
-    printk(KERN_ERR "%s: failed to retrieve OLED fifo size\n",
-           DRIVER_NAME);
-    return err;
-  }
+  // err = of_property_read_u32(pdev->dev.of_node, "fifo-size",
+  //                            &inst->fifo_size);
+  // if (err)
+  // {
+  //   printk(KERN_ERR "%s: failed to retrieve OLED fifo size\n",
+  //          DRIVER_NAME);
+  //   return err;
+  // }
 
-  // get interrupt
-  res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-  if (IS_ERR(res))
-  {
-    return PTR_ERR(res);
-  }
+  // // get interrupt
+  // res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+  // if (IS_ERR(res))
+  // {
+  //   return PTR_ERR(res);
+  // }
 
-  err = devm_request_irq(&pdev->dev, res->start,
-                         esl_oled_irq_handler,
-                         IRQF_TRIGGER_HIGH,
-                         "zedoled", inst);
-  if (err < 0)
-  {
-    return err;
-  }
+  // err = devm_request_irq(&pdev->dev, res->start,
+  //                        esl_oled_irq_handler,
+  //                        IRQF_TRIGGER_HIGH,
+  //                        "zedoled", inst);
+  // if (err < 0)
+  // {
+  //   return err;
+  // }
 
   // save irq number
-  inst->irqnum = res->start;
+  // inst->irqnum = res->start;
 
   // create character device
+  // increment instance count
+  driver_data.instance_count++;
 
   // get device number
   inst->devno = MKDEV(MAJOR(driver_data.first_devno),
@@ -490,15 +577,12 @@ static int esl_oled_probe(struct platform_device *pdev)
   }
 
   // Device creation for sysfs
-  dev = device_create(driver_data.class, &pdev->dev, inst->devno, NULL, "zedoled%d", MINOR(inst->devno));
+  dev = device_create(driver_data.class, NULL, inst->devno, NULL, "zedoled%d", MINOR(inst->devno));
   if (IS_ERR(dev))
   {
     cdev_del(&inst->chr_dev);
     return PTR_ERR(dev);
   }
-
-  // increment instance count
-  driver_data.instance_count++;
 
   // put into list
   INIT_LIST_HEAD(&inst->inst_list);
@@ -506,22 +590,29 @@ static int esl_oled_probe(struct platform_device *pdev)
 
 
 //sets tri state control regs to ctrl reg global
-  inst->ctrl_regs = ioremap(OLED_CTRL_REG + 0xC, 0x128);
+  inst->gpio_regs = ioremap(OLED_CTRL_REG, 0x128);
 
-  if (!inst->ctrl_regs)
+  if (!inst->gpio_regs)
   {
     printk(KERN_ERR "Failed to map physical address\n");
     return -ENOMEM;
   }
 
 
-  oled_spi_setup(inst);
+  // oled_spi_setup(inst);
 
-  oled_setup(inst);
+  // // makes all gpio pins into outputs
+  // iowrite32(0 ,inst->gpio_regs + GPIO_TRI);
 
-  oled_on(inst);
+  // oled_setup_full(inst);
+
+  // // oled_on(inst);
+
+  // // oled_setup(inst);
+
+  // iowrite32(0xA5, inst->spi_regs + DTR);
+
   
-
   return 0;
 }
 
@@ -529,14 +620,12 @@ static int esl_oled_remove(struct platform_device *pdev)
 {
   struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
-  oled_off(inst);
-
-  // cleanup and remove
-  device_destroy(&esl_oled_class, inst->devno);
-
+  // oled_off(inst);
 
   cdev_del(&inst->chr_dev);
-
+ 
+  // cleanup and remove
+  device_destroy(&esl_oled_class, inst->devno);
   // remove from list
   list_del(&inst->inst_list);
 
@@ -584,7 +673,7 @@ static void esl_oled_exit(void)
 {
 
   //unmaps control registers
-  iounmap(ctrl_regs_global);
+  iounmap(gpio_regs_global);
 
   // free character device region
   unregister_chrdev_region(driver_data.first_devno, 1);
