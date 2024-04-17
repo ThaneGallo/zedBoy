@@ -7,7 +7,17 @@
 
 #include "snake.h"
 
-void SnakeGame_setup(SnakeGame *game) {
+SnakeGame *game;
+
+// Register games automatically at startup
+__attribute__((constructor))
+void registerSnakeGames() {
+    if (game_count < MAX_GAMES) games[game_count++] = SnakeGame_setup;
+    if (game_count < MAX_GAMES) gameTicks[gameTick_count++] = SnakeGame_tick;
+}
+
+void SnakeGame_setup() {
+    game = (SnakeGame *)malloc(sizeof(SnakeGame));
     game->gameOver = 0;
     game->dir = STOP;
     game->x = WIDTH / 2;
@@ -23,7 +33,15 @@ void SnakeGame_draw(const SnakeGame *game) {
     // Output the game state
     int i, j, k;
 
-    // system("clear");
+    // int ret = system("clear");
+    // if (ret != 0) {
+    //     printf("Error clearing the screen\n");
+    //     // printk(KERN_INFO "Error clearing the screen\n");
+    // }
+
+    printf("\e[1;1H\e[2J");
+
+
     for (i = 0; i < WIDTH + 2; i++) {
         printf("#");
         // printk(KERN_INFO "#");
@@ -179,7 +197,7 @@ void SnakeGame_logic(SnakeGame *game) {
     }
 }
 
-void SnakeGame_tick(SnakeGame *game, int direction) {
+void SnakeGame_tick(int direction) {
     SnakeGame_input(game, direction);
     SnakeGame_logic(game);
     SnakeGame_draw(game);

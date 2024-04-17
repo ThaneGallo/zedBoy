@@ -20,16 +20,18 @@ typedef struct {
     int gameOver;
 } SnakeGame;
 
-void SnakeGame_setup(SnakeGame *game);
+// extern SnakeGame *game;
+
+void SnakeGame_setup();
 void SnakeGame_draw(const SnakeGame *game);
 void SnakeGame_input(SnakeGame *game, int direction);
 void SnakeGame_logic(SnakeGame *game);
-void SnakeGame_tick(SnakeGame *game, int direction);
+void SnakeGame_tick(int direction);
 
-GameFunction SnakeGame_setup_func = SnakeGame_setup;
-GameFunctionTick SnakeGame_tick_func = SnakeGame_tick;
+// GameFunction SnakeGame_setup_func = SnakeGame_setup;
+// GameFunctionTick SnakeGame_tick_func = SnakeGame_tick;
 
-gameSetups[0] = SnakeGame_setup_func;
-gameTicks[0] = SnakeGame_tick_func;
+// gameSetups[0] = SnakeGame_setup_func;
+// gameTicks[0] = SnakeGame_tick_func;
 
 #endif /* SNAKE_H */
