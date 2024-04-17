@@ -5,8 +5,7 @@
 #include <termios.h>
 #include <fcntl.h>
 
-#include "Snake.h"
-
+#include "snake.h"
 
 void SnakeGame_setup(SnakeGame *game) {
     game->gameOver = 0;
@@ -178,4 +177,10 @@ void SnakeGame_logic(SnakeGame *game) {
         game->fruitY = rand() % HEIGHT;
         game->nTail++;
     }
+}
+
+void SnakeGame_tick(SnakeGame *game, int direction) {
+    SnakeGame_input(game, direction);
+    SnakeGame_logic(game);
+    SnakeGame_draw(game);
 }
