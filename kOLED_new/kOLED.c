@@ -25,12 +25,12 @@
 
 // docs.xilinx.com/r/en-US/pg153-axi-quad-spi/Port-Descriptions
 // spi register space
-#define SRR 0x40   // software reg reset
-#define SPICR 0x60 // spi cont reg
-#define SPISR 0x64 // spi stat reg
-#define DTR 0x68   // spi data trans reg
-#define DRR 0x6C   // spi data rec reg
-#define SPISSR 0x70
+#define SRR 0x40    // software reg reset
+#define SPICR 0x60  // spi cont reg
+#define SPISR 0x64  // spi stat reg
+#define DTR 0x68    // spi data trans reg
+#define DRR 0x6C    // spi data rec reg
+#define SPISSR 0x70 // spi slave select
 #define SPITXOCC 0x74
 #define SPIRXOCC 0x78
 #define SPI_TXFIFO 0x78 // occupancy tx
@@ -46,11 +46,30 @@
 #define IPISR 0x20 // ip isr
 #define IPIER 0x28 // ip ier
 
-// interrput bits
+
+
+// IPISR interrput bits
+#define IP_MODF (1 << 0)
+#define IP_SLAVE_MODF (1 << 1)
+#define IP_TX_EMPTY (1 << 2)
+#define TX_UNDERRUN (1 << 3)
+#define IP_IP_RX_FULL (1 << 4)
+#define IP_RX_OVERRUN (1 << 5)
+#define IP_TX_HALF_EMPTY (1 << 6)
+#define IP_SLAVE_SELECT (1 << 7)
+#define IP_RX_NOT_EMPTY (1 << 8)
+#define IP_CPOL_CPHA (1 << 9)
+
+//SPISR
+#define RX_EMPTY (1 << 0)
+#define RX_FULL (1 << 1)
 #define TX_EMPTY (1 << 2)
 #define TX_FULL (1 << 3)
-#define TX_HALF_EMPTY (1 << 6)
-#define RX_EMPTY (1 << 0)
+#define MODF (1 << 4)
+#define SLAVE_MODE_SELECT (1 << 5)
+#define CPOL_CPHA (1 << 6)
+#define SLAVE_ERROR (1 << 7)
+
 
 // SPICR thingies
 #define MASTER_INHIBIT (1 << 8)
@@ -89,6 +108,8 @@ struct esl_oled_instance
     struct cdev chr_dev; // character device
 
     unsigned char fifo_buf[15];
+
+    unsigned int irqnum;
 
     dev_t devno;
 
@@ -154,7 +175,7 @@ static void print_debug(void *__iomem base)
     printk(KERN_INFO "SPISR | 0x%08X\n", reg_read(base, SPISR));
     printk(KERN_INFO "SPISSR | 0x%08X\n", reg_read(base, SPISSR));
 
-    if (reg_read(base, SPISR & TX_EMPTY))
+    if (reg_read(base, SPISR) & TX_EMPTY)
     {
         printk(KERN_DEBUG "SPITXOCC | 0x%0X\n", reg_read(base, SPITXOCC));
     }
@@ -170,56 +191,64 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
 {
     unsigned int spisr, recieved = 0;
 
-    print_debug(base);
-
     // setups master mode and inhibit
-    reg_write(base, SPICR, MASTER_MODE | MASTER_INHIBIT);
+    reg_write(base, SPICR, reg_read(base, SPICR) | MASTER_MODE | MASTER_INHIBIT);
 
     // clear both fifos
-    reg_write(base, SPICR, TX_RESET | RX_EMPTY);
+    reg_write(base, SPICR, reg_read(base, SPICR) | TX_RESET | RX_RESET);
 
-    // // asserts slave
-    // reg_write(base, SPICR, SLAVE_ASSERT);
+    // asserts slave
+    reg_write(base, SPISSR, 0x00);
 
-    //writes buffer to tx fifo
+    print_debug(base);
+
+    // printk(KERN_INFO "size before loop %i", size);
+
+    // writes buffer to tx fifo
     while (size--)
     {
-        // printf("send 0x%x\n", *buf);
+        printk(KERN_INFO "send 0x%x\n", *buf);
         reg_write(base, DTR, *(buf++));
+        
     }
 
-    // selects slave 0
-    reg_write(base, SPISSR, 0x00);
+    // printk(KERN_INFO "size after loop %i", size);
 
     // disable master mode and enable SPE
     reg_write(base, SPICR, (reg_read(base, SPISR) & ~(MASTER_INHIBIT)) | SPE);
 
-    //100ms
-    usleep_range(100000, 100000);
+    // 10us
+    usleep_range(10, 10);
 
-    spisr = reg_read(base, SPISR);
-    
-    while (!(spisr & TX_EMPTY))
+    while (!(reg_read(base, SPISR) & TX_EMPTY))
     {
-        spisr = reg_read(base, SPISR);
 
-        if (recBuf && !(spisr && RX_EMPTY))
+        if (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
         {
             recBuf[recieved++] = reg_read(base, DRR);
         }
     }
 
     // in case anything is left in rx fifo
-    while (recBuf && !(spisr & RX_EMPTY))
+    while (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
     {
-        spisr = reg_read(base, SPISR);
         recBuf[recieved++] = reg_read(base, DRR);
     }
 
     // deselect slave
     reg_write(base, SPISSR, 0xFF);
 
-    reg_write(base, SPICR, (reg_read(base, SPISR) & ~(MASTER_INHIBIT)) | SPE);
+    reg_write(base, SPICR, (reg_read(base, SPICR) | (MASTER_INHIBIT)) & ~(SPE));
+
+    if (reg_read(base, SPISR) & RX_EMPTY)
+    {
+        printk(KERN_DEBUG "EMPTY recieve | 0x%0X\n", reg_read(base, SPITXOCC));
+    }
+
+    if (reg_read(base, SPISR) & TX_EMPTY)
+    {
+        printk(KERN_DEBUG "EMPTY transmit | 0x%0X\n", reg_read(base, SPIRXOCC));
+    }
 
     print_debug(base);
 
@@ -233,6 +262,7 @@ static ssize_t esl_oled_write(struct file *f,
 {
     struct esl_oled_instance *inst = file_to_instance(f);
     unsigned int sent, to_send, recieved;
+    char recBuf[10];
 
     if (!inst)
     {
@@ -245,7 +275,7 @@ static ssize_t esl_oled_write(struct file *f,
     //   return -EFAULT;
     // }
 
-    //transmits buffer in chunks (fifo size)
+    // transmits buffer in chunks (fifo size)
     if (len > 16)
     {
         sent = 0;
@@ -261,7 +291,7 @@ static ssize_t esl_oled_write(struct file *f,
             sent += to_send;
         }
     }
-    //transmits whole buffer
+    // transmits whole buffer
     else
     {
         recieved += spi_transmit(inst->spi_regs, buf, len, NULL);
@@ -277,7 +307,9 @@ struct file_operations esl_oled_fops = {
 
 void spi_send_buffer(struct esl_oled_instance *inst, unsigned char *buf, unsigned int size)
 {
-    spi_transmit(inst->spi_regs, buf, size, NULL);
+    char recBuf[10];
+
+    spi_transmit(inst->spi_regs, buf, size, recBuf);
 }
 
 void spi_send_byte(struct esl_oled_instance *inst, unsigned char data)
@@ -291,10 +323,9 @@ static int oled_on(struct esl_oled_instance *inst)
     uint8_t data[10];
     uint32_t gpio;
 
-    //powerup sequence
+    // powerup sequence
     printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
     print_debug(inst->spi_regs);
-
 
     printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
     // dc to low (command)
@@ -303,24 +334,20 @@ static int oled_on(struct esl_oled_instance *inst)
     printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
     // sets vdd->0 res->1 vcc->0
     reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) | OLED_VBAT | OLED_RES | OLED_VDD);
-    
 
     usleep_range(1000, 1000);
     printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
-    //vdd->1
+    // vdd->1
     reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_VDD));
 
     // res switch delay
     usleep_range(1000, 1000);
-
-
 
     printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
     // turn off
     data[0] = 0xAE;
     spi_send_buffer(inst, data, 1);
 
-    
     // set clock divide
     data[0] = 0xD5;
     data[1] = 0x80;
@@ -352,39 +379,39 @@ static int oled_on(struct esl_oled_instance *inst)
     data[0] = 0xC0;
     spi_send_buffer(inst, data, 1);
 
-    //com pins hardware config
+    // com pins hardware config
     data[0] = 0xDA;
     data[1] = 0x00;
     spi_send_buffer(inst, data, 2);
 
-    //contrast control
+    // contrast control
     data[0] = 0x81;
     data[1] = 0x7F;
     spi_send_buffer(inst, data, 2);
 
-    //pre charge period
+    // pre charge period
     data[0] = 0xD9;
     data[1] = 0xF1;
     spi_send_buffer(inst, data, 2);
 
-    //vcomh deselect level
+    // vcomh deselect level
     data[0] = 0xDB;
     data[1] = 0x40;
     spi_send_buffer(inst, data, 2);
 
-    //entire display on 
+    // entire display on
     data[0] = 0xA4;
     spi_send_buffer(inst, data, 2);
 
-    //normal / inverse display
+    // normal / inverse display
     data[0] = 0xA6;
     spi_send_buffer(inst, data, 1);
 
     printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
-    //vcc->1
+    // vcc->1
     reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_VBAT));
 
-    //100ms
+    // 100ms
     usleep_range(100000, 100000);
 
     data[0] = OLED_ADDR_MODE;
@@ -406,9 +433,9 @@ static int oled_on(struct esl_oled_instance *inst)
     spi_send_buffer(inst, data, 1);
 
     printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
-    //turns on screen
 
-    data[0] = 0xA5;
+    // turns on screen
+    data[0] = 0xAE;
     spi_send_buffer(inst, data, 1);
 
     // turn on time
@@ -420,32 +447,272 @@ static int oled_on(struct esl_oled_instance *inst)
     return 0;
 }
 
-static int oled_spi_setup(struct esl_oled_instance *inst)
+// static int oled_spi_setup(struct esl_oled_instance *inst)
+// {
+
+//     // sets gpio to outputs
+//     reg_write(inst->gpio_regs, GPIO_TRI, 0);
+//     reg_write(inst->gpio_regs, GPIO_DATA, 0xe);
+
+//     // contains power up sequence and hardware setup
+// oled_on(inst);
+//     printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
+
+// //     // software reset
+//     reg_write(inst->spi_regs, SRR, 0xa);
+
+//     printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
+
+//     // sets up SPI Control Reg
+//     reg_write(inst->spi_regs, SPICR, MASTER_MODE | MASTER_INHIBIT);
+
+//     return 0;
+// }
+
+static int spi_reset(struct esl_oled_instance *inst)
 {
-    
-    // sets gpio to outputs
-    reg_write(inst->gpio_regs, GPIO_TRI, 0);
-    reg_write(inst->gpio_regs, GPIO_DATA, 0xe);
+    unsigned int CPOL, CPHA, CLOCK;
 
-    //contains power up sequence and hardware setup
-    oled_on(inst);
-
-    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
     // software reset
     reg_write(inst->spi_regs, SRR, 0xa);
 
-    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
+    reg_write(inst->spi_regs, SPICR, MASTER_MODE | MASTER_INHIBIT | SLAVE_ASSERT | SPE);
 
-    // sets up SPI Control Reg
-    reg_write(inst->spi_regs, SPICR, MASTER_MODE | MASTER_INHIBIT);
+    // CPOL =  (1 << 4);
+    // CPHA =  (1 << 3);
+
+    // CLOCK = CPOL | CPHA;
+
+    // reg_write(inst->spi_regs, SPICR, reg_read(inst->spi_regs, SPICR) | CLOCK);
 
     return 0;
 }
 
+static int oled_setup(struct esl_oled_instance *inst)
+{
+
+    uint8_t data[10];
+
+    spi_reset(inst);
+
+    // sets gpio to outputs
+    reg_write(inst->gpio_regs, GPIO_TRI, 0);
+    reg_write(inst->gpio_regs, GPIO_DATA, 0xe);
+
+    usleep_range(1000, 1000);
+
+    // clear vdd (set to 1)
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_VDD));
+
+    // clear res
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_RES));
+
+    usleep_range(1000, 1000);
+
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) | (OLED_RES));
+
+    usleep_range(1000, 1000);
+
+    printk(KERN_ERR "turn off %s %d\n", __FUNCTION__, __LINE__);
+    // turn off
+    data[0] = 0xA5;
+    spi_send_buffer(inst, data, 1);
+
+    printk(KERN_ERR "clock divide %s %d\n", __FUNCTION__, __LINE__);
+    // set clock divide
+    data[0] = 0xD5;
+    data[1] = 0x80;
+    spi_send_buffer(inst, data, 2);
+
+    printk(KERN_ERR "multiplex %s %d\n", __FUNCTION__, __LINE__);
+    // set multiplex
+    data[0] = 0xA8;
+    data[1] = 0x1F;
+    spi_send_buffer(inst, data, 2);
+
+    printk(KERN_ERR "display offset %s %d\n", __FUNCTION__, __LINE__);
+    // set display offset
+    data[0] = 0xD3;
+    data[1] = 0x00;
+    spi_send_buffer(inst, data, 2);
+
+    printk(KERN_ERR "display line %s %d\n", __FUNCTION__, __LINE__);
+    // set display line
+    data[0] = 0x40;
+    spi_send_buffer(inst, data, 1);
+
+    printk(KERN_ERR "charge pump %s %d\n", __FUNCTION__, __LINE__);
+    // set charge pump
+    data[0] = 0x8D;
+    data[1] = 0x14;
+    spi_send_buffer(inst, data, 2);
+
+    printk(KERN_ERR "segment remap  %s %d\n", __FUNCTION__, __LINE__);
+    // segment remap
+    data[0] = 0xA0;
+    spi_send_buffer(inst, data, 1);
+
+    //??
+    data[0] = 0xC0;
+    spi_send_buffer(inst, data, 1);
+
+    printk(KERN_ERR "com pin hardware config %s %d\n", __FUNCTION__, __LINE__);
+    // com pins hardware config
+    data[0] = 0xDA;
+    data[1] = 0x00;
+    spi_send_buffer(inst, data, 2);
+
+    printk(KERN_ERR "contrast control %s %d\n", __FUNCTION__, __LINE__);
+    // contrast control
+    data[0] = 0x81;
+    data[1] = 0x7F;
+    spi_send_buffer(inst, data, 2);
+
+    printk(KERN_ERR "precharge %s %d\n", __FUNCTION__, __LINE__);
+    // pre charge period
+    data[0] = 0xD9;
+    data[1] = 0xF1;
+    spi_send_buffer(inst, data, 2);
+
+    printk(KERN_ERR "vcomh deselet %s %d\n", __FUNCTION__, __LINE__);
+    // vcomh deselect level
+    data[0] = 0xDB;
+    data[1] = 0x40;
+    spi_send_buffer(inst, data, 2);
+
+    printk(KERN_ERR "GDDRAM fill %s %d\n", __FUNCTION__, __LINE__);
+    // entire display on
+    data[0] = 0xA4;
+    spi_send_buffer(inst, data, 1);
+
+    printk(KERN_ERR "normal / inverse %s %d\n", __FUNCTION__, __LINE__);
+    // normal / inverse display
+    data[0] = 0xA6;
+    spi_send_buffer(inst, data, 1);
+
+    // turn off
+    // data[0] = 0x8D;
+    // data[1] = 0x14;
+    // spi_send_buffer(inst, data, 2);
+
+    // // pre charge period
+    // data[0] = 0xD9;
+    // data[1] = 0xF1;
+    // spi_send_buffer(inst, data, 2);
+
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_VBAT));
+
+    usleep_range(100000, 100000);
+
+    data[0] = OLED_ADDR_MODE;
+    data[1] = 0x01;
+    spi_send_buffer(inst, data, 2);
+
+    data[0] = OLED_SET_COL;
+    data[1] = 0x00;
+    data[2] = 0x7F;
+    spi_send_buffer(inst, data, 3);
+
+    data[0] = OLED_SET_PG;
+    data[1] = 0x00;
+    data[2] = 0x03;
+    spi_send_buffer(inst, data, 3);
+
+    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
+    data[0] = OLED_ENABLE;
+    spi_send_buffer(inst, data, 1);
+
+    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
+
+    // turns on screen
+    data[0] = 0xA5;
+    spi_send_buffer(inst, data, 1);
+
+    // data[0] = 0x81;
+    // data[1] = 0x0F;
+    // spi_send_buffer(inst, data, 2);
+
+    // data[0] = 0xA0;
+    // spi_send_buffer(inst, data, 1);
+
+    // data[0] = 0xC0;
+    // spi_send_buffer(inst, data, 1);
+
+    // data[0] = 0xDA;
+    // data[1] = 0x00;
+    // spi_send_buffer(inst, data, 2);
+
+    // data[0] = 0xA6;
+    // spi_send_buffer(inst, data, 1);
+
+    // data[0] = 0xAF;
+    // spi_send_buffer(inst, data, 1);
+
+    // data[0] = 0xA5;
+    // spi_send_buffer(inst, data, 1);
+
+    return 0;
+}
+
+// static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
+// {
+//     struct esl_oled_instance *inst = dev_id;
+
+//     unsigned long ISR_reg;
+
+//     // Reads the interrupt status
+//     ISR_reg = ioread32(inst->spi_regs + IPISR);
+
+//     if (ISR_reg & (1 << MODF))
+//     {
+//         printk(KERN_WARNING "mode error\n");
+//         return -EINVAL;
+//     }
+
+//     else if (ISR_reg & (1 << SLAVE_MODF))
+//     {
+//         printk(KERN_WARNING "slave mode error\n");
+//         return -EINVAL;
+//     }
+
+//     else if (ISR_reg & (1 << TX_UNDERRUN))
+//     {
+//         printk(KERN_WARNING "DTR_underrun!\n");
+//         return -EINVAL;
+//     }
+
+//     else if (ISR_reg & (1 << TX_EMPTY))
+//     {
+//         printk(KERN_WARNING "DTR empty!\n");
+//         return -EINVAL;
+//     }
+
+//     else if (ISR_reg & (1 << TX_HALF_EMPTY))
+//     {
+//         // if half empty wait a little to fill back up
+//         printk(KERN_WARNING "tx fifo half empty!\n");
+//         usleep_range(1000, 2000);
+//     }
+
+//     if (ISR_reg & (1 << RX_OVERRUN))
+//     {
+//         printk(KERN_WARNING "Recieve OVerrun!!!\n");
+//         return -EINVAL;
+//     }
+
+//     if (ISR_reg & (1 << CPOL_CPHA))
+//     {
+//         printk(KERN_WARNING "CPOL_CPHA error\n");
+//         return -EINVAL;
+//     }
+
+//     return IRQ_HANDLED;
+// }
+
 static int esl_oled_probe(struct platform_device *pdev)
 {
     struct esl_oled_instance *inst = NULL;
-    int err;
+    int err = 0;
     struct resource *res;
     struct device *dev;
 
@@ -497,7 +764,7 @@ static int esl_oled_probe(struct platform_device *pdev)
     // res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
     // if (IS_ERR(res))
     // {
-    //   return PTR_ERR(res);
+    //     return PTR_ERR(res);
     // }
 
     // err = devm_request_irq(&pdev->dev, res->start,
@@ -506,10 +773,10 @@ static int esl_oled_probe(struct platform_device *pdev)
     //                        "zedoled", inst);
     // if (err < 0)
     // {
-    //   return err;
+    //     return err;
     // }
 
-    // save irq number
+    // // save irq number
     // inst->irqnum = res->start;
 
     // create character device
@@ -545,10 +812,9 @@ static int esl_oled_probe(struct platform_device *pdev)
     INIT_LIST_HEAD(&inst->inst_list);
     list_add(&inst->inst_list, &driver_data.instance_list);
 
-    oled_spi_setup(inst);
-    
+    // ooled_setupled_spi_setup(inst);
 
-    
+    oled_setup(inst);
 
     return 0;
 }
