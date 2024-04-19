@@ -161,4 +161,6 @@ void main()
         printf("%sFailed to open the character device");
         return -1;
     }
+
+
 }
