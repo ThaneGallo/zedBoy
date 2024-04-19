@@ -15,6 +15,11 @@
 
 char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
 
+/* @brief draws pixel
+   @param x pixel x coordinate
+   @param y pixel y coordinate
+   @param state 1 = on 0 = off
+   @return 0 on success, < 0 on error */
 int fbPixelDraw(int x, int y, int state)
 {
     char byte_offset;
@@ -40,6 +45,13 @@ int fbPixelDraw(int x, int y, int state)
     return 0;
 }
 
+/* @brief draws line between 2 points
+   @param startX start pixel x coordinate
+   @param startY pixel y coordinate
+   @param endX pixel x coordinate
+   @param endY pixel y coordinate
+   @param state 1 = on 0 = off
+   @return 0 on success, < 0 on error */
 int drawLine(int startX, int startY, int endX, int endY, int state)
 {
     int dx, dy;
@@ -126,6 +138,13 @@ int drawLine(int startX, int startY, int endX, int endY, int state)
     return 0;
 }
 
+/* @brief draws empty rectangle between 2 points
+   @param startX start pixel x coordinate
+   @param startY pixel y coordinate
+   @param endX pixel x coordinate
+   @param endY pixel y coordinate
+   @param state 1 = on 0 = off
+   @return 0 on success, < 0 on error */
 int drawEmptyRectangle(int startX, int startY, int endX, int endY, int state)
 {
 
@@ -137,6 +156,10 @@ int drawEmptyRectangle(int startX, int startY, int endX, int endY, int state)
     return 0;
 }
 
+/* @brief Read PBM header
+   @param fp file pointer
+   @param dest destination struct
+   @return 0 on success, < 0 on error */
 int sendBuffer(FILE *fp, char *buf)
 {
 
