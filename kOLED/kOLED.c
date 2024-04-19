@@ -276,11 +276,11 @@ static ssize_t esl_oled_write(struct file *f,
         return -ENOMEM;
     }
 
-     // Copy from user space to kernel buffer
-    if (copy_from_user(inst->fifo_buf, buf + written, to_write))
-    {
-      return -EFAULT;
-    }
+    //  // Copy from user space to kernel buffer
+    // if (copy_from_user(inst->fifo_buf, buf + written, to_write))
+    // {
+    //   return -EFAULT;
+    // }
 
     // transmits buffer in chunks (fifo size)
     if (len > 16)
@@ -294,14 +294,14 @@ static ssize_t esl_oled_write(struct file *f,
             {
                 to_send = 16;
             }
-            recieved += spi_transmit(inst->spi_regs, buf + sent, to_send, revBuf);
+            // recieved += spi_transmit(inst->spi_regs, buf + sent, to_send, revBuf);
             sent += to_send;
         }
     }
     // transmits whole buffer
     else
     {
-        recieved += spi_transmit(inst->spi_regs, buf, len, NULL);
+        // recieved += spi_transmit(inst->spi_regs, buf, len, NULL);
     }
 
     return 0;
@@ -442,7 +442,7 @@ static int oled_setup(struct esl_oled_instance *inst)
     data[0] = 0xA6;
     spi_send_buffer(inst, data, 1);
 
-    turn off
+    // turn off
     data[0] = 0x8D;
     data[1] = 0x14;
     spi_send_buffer(inst, data, 2);
@@ -653,7 +653,7 @@ static int esl_oled_probe(struct platform_device *pdev)
     }
 
     // Device creation for sysfs
-    dev = device_create(driver_data.class, NULL, inst->devno, NULL, "zedoled%d\n", MINOR(inst->devno));
+    dev = device_create(driver_data.class, NULL, inst->devno, NULL, "zedoled%d", MINOR(inst->devno));
     if (IS_ERR(dev))
     {
         cdev_del(&inst->chr_dev);
