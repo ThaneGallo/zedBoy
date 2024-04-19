@@ -191,16 +191,21 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
 {
     unsigned int spisr, recieved = 0;
 
+    printk(KERN_INFO "SPISR beginning of spi| 0x%08X\n", reg_read(base, IPISR));
+
     // setups master mode and inhibit
     reg_write(base, SPICR, reg_read(base, SPICR) | MASTER_MODE | MASTER_INHIBIT);
 
     // clear both fifos
     reg_write(base, SPICR, reg_read(base, SPICR) | TX_RESET | RX_RESET);
 
+    printk(KERN_INFO "post reset | 0x%08X\n", reg_read(base, IPISR));
+
+
     // asserts slave
     reg_write(base, SPISSR, 0x00);
 
-    print_debug(base);
+    // print_debug(base);
 
     // printk(KERN_INFO "size before loop %i", size);
 
@@ -209,30 +214,32 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
     {
         printk(KERN_INFO "send 0x%x\n", *buf);
         reg_write(base, DTR, *(buf++));
+        printk(KERN_INFO " in loop | 0x%08X\n", reg_read(base, IPISR));
         
     }
 
-    // printk(KERN_INFO "size after loop %i", size);
-
     // disable master mode and enable SPE
-    reg_write(base, SPICR, (reg_read(base, SPISR) & ~(MASTER_INHIBIT)) | SPE);
+    reg_write(base, SPICR, (reg_read(base, SPICR) & ~(MASTER_INHIBIT)) | SPE); 
+
 
     // 10us
-    usleep_range(10, 10);
+    usleep_range(10000, 10000);
 
     while (!(reg_read(base, SPISR) & TX_EMPTY))
     {
 
         if (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
         {
-            recBuf[recieved++] = reg_read(base, DRR);
+             reg_write(base, SPICR, reg_read(base, SPICR) | RX_RESET);
         }
     }
+
+  
 
     // in case anything is left in rx fifo
     while (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
     {
-        recBuf[recieved++] = reg_read(base, DRR);
+        reg_write(base, SPICR, reg_read(base, SPICR) | RX_RESET);
     }
 
     // deselect slave
@@ -240,17 +247,17 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
 
     reg_write(base, SPICR, (reg_read(base, SPICR) | (MASTER_INHIBIT)) & ~(SPE));
 
-    if (reg_read(base, SPISR) & RX_EMPTY)
-    {
-        printk(KERN_DEBUG "EMPTY recieve | 0x%0X\n", reg_read(base, SPITXOCC));
-    }
+    // if (reg_read(base, SPISR) & RX_EMPTY)
+    // {
+    //     printk(KERN_DEBUG "EMPTY recieve | 0x%0X\n", reg_read(base, SPITXOCC));
+    // }
 
-    if (reg_read(base, SPISR) & TX_EMPTY)
-    {
-        printk(KERN_DEBUG "EMPTY transmit | 0x%0X\n", reg_read(base, SPIRXOCC));
-    }
+    // if (reg_read(base, SPISR) & TX_EMPTY)
+    // {
+    //     printk(KERN_DEBUG "EMPTY transmit | 0x%0X\n", reg_read(base, SPIRXOCC));
+    // }
 
-    print_debug(base);
+    // print_debug(base);
 
     return recieved;
 }
@@ -472,9 +479,12 @@ static int oled_on(struct esl_oled_instance *inst)
 static int spi_reset(struct esl_oled_instance *inst)
 {
     unsigned int CPOL, CPHA, CLOCK;
+    printk(KERN_INFO " spi pre spi reset| 0x%08X\n", reg_read(inst->spi_regs, IPISR));
 
     // software reset
     reg_write(inst->spi_regs, SRR, 0xa);
+
+    printk(KERN_INFO "turn on SPE in reset 0x%08X\n", reg_read(inst->spi_regs, IPISR));
 
     reg_write(inst->spi_regs, SPICR, MASTER_MODE | MASTER_INHIBIT | SLAVE_ASSERT | SPE);
 
