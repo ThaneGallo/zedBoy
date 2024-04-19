@@ -46,8 +46,6 @@
 #define IPISR 0x20 // ip isr
 #define IPIER 0x28 // ip ier
 
-
-
 // IPISR interrput bits
 #define IP_MODF (1 << 0)
 #define IP_SLAVE_MODF (1 << 1)
@@ -60,7 +58,7 @@
 #define IP_RX_NOT_EMPTY (1 << 8)
 #define IP_CPOL_CPHA (1 << 9)
 
-//SPISR
+// SPISR
 #define RX_EMPTY (1 << 0)
 #define RX_FULL (1 << 1)
 #define TX_EMPTY (1 << 2)
@@ -69,7 +67,6 @@
 #define SLAVE_MODE_SELECT (1 << 5)
 #define CPOL_CPHA (1 << 6)
 #define SLAVE_ERROR (1 << 7)
-
 
 // SPICR thingies
 #define MASTER_INHIBIT (1 << 8)
@@ -201,7 +198,6 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
 
     // printk(KERN_INFO "post reset | 0x%08X\n", reg_read(base, IPISR));
 
-
     // asserts slave
     reg_write(base, SPISSR, 0x00);
 
@@ -215,26 +211,22 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
         // printk(KERN_INFO "send 0x%x\n", *buf);
         reg_write(base, DTR, *(buf++));
         // printk(KERN_INFO " in loop | 0x%08X\n", reg_read(base, IPISR));
-        
     }
 
     // disable master mode and enable SPE
-    reg_write(base, SPICR, (reg_read(base, SPICR) & ~(MASTER_INHIBIT)) | SPE); 
-
+    reg_write(base, SPICR, (reg_read(base, SPICR) & ~(MASTER_INHIBIT)) | SPE);
 
     // 10us
-    usleep_range(10000, 10000);
+    usleep_range(10, 10);
 
     while (!(reg_read(base, SPISR) & TX_EMPTY))
     {
 
         if (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
         {
-             reg_write(base, SPICR, reg_read(base, SPICR) | RX_RESET);
+            reg_write(base, SPICR, reg_read(base, SPICR) | RX_RESET);
         }
     }
-
-  
 
     // in case anything is left in rx fifo
     while (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
@@ -247,70 +239,9 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
 
     reg_write(base, SPICR, (reg_read(base, SPICR) | (MASTER_INHIBIT)) & ~(SPE));
 
-    // if (reg_read(base, SPISR) & RX_EMPTY)
-    // {
-    //     printk(KERN_DEBUG "EMPTY recieve | 0x%0X\n", reg_read(base, SPITXOCC));
-    // }
-
-    // if (reg_read(base, SPISR) & TX_EMPTY)
-    // {
-    //     printk(KERN_DEBUG "EMPTY transmit | 0x%0X\n", reg_read(base, SPIRXOCC));
-    // }
-
-    // print_debug(base);
 
     return recieved;
 }
-
-/* Character device File Ops */
-static ssize_t esl_oled_write(struct file *f,
-                              const char __user *buf, size_t len,
-                              loff_t *offset)
-{
-    struct esl_oled_instance *inst = file_to_instance(f);
-    unsigned int sent, to_send, recieved;
-    char recBuf[10];
-
-    if (!inst)
-    {
-        return -ENOMEM;
-    }
-
-    //  // Copy from user space to kernel buffer
-    // if (copy_from_user(inst->fifo_buf, buf + written, to_write))
-    // {
-    //   return -EFAULT;
-    // }
-
-    // transmits buffer in chunks (fifo size)
-    if (len > 16)
-    {
-        sent = 0;
-
-        while (sent < len)
-        {
-            to_send = len - sent;
-            if (to_send > 16)
-            {
-                to_send = 16;
-            }
-            // recieved += spi_transmit(inst->spi_regs, buf + sent, to_send, revBuf);
-            sent += to_send;
-        }
-    }
-    // transmits whole buffer
-    else
-    {
-        // recieved += spi_transmit(inst->spi_regs, buf, len, NULL);
-    }
-
-    return 0;
-}
-
-// definition of file operations
-struct file_operations esl_oled_fops = {
-    .write = esl_oled_write,
-};
 
 void spi_send_buffer(struct esl_oled_instance *inst, unsigned char *buf, unsigned int size)
 {
@@ -325,6 +256,76 @@ void spi_send_byte(struct esl_oled_instance *inst, unsigned char data)
 }
 
 
+/* Character device File Ops */
+static ssize_t esl_oled_write(struct file *f,
+                              const char __user *buf, size_t len,
+                              loff_t *offset)
+{
+    struct esl_oled_instance *inst = file_to_instance(f);
+    unsigned int sent, to_send, recieved, written, to_write;
+    unsigned char data[10];
+    char recBuf[10];
+
+    //sets oled to take data
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) | OLED_DC);
+
+    sent = 0;
+
+    if (!inst)
+    {
+        return -ENOMEM;
+    }
+    while (len > 0)
+    {
+        // Copy from user space to kernel buffer
+        if (copy_from_user(inst->fifo_buf, buf + sent, to_send))
+        {
+            return -EFAULT;
+        }
+
+        // transmits buffer in chunks (fifo size)
+        if (len > 16)
+        {
+
+            while (sent < len)
+            {
+                to_send = len - sent;
+                if (to_send > 16)
+                {
+                    to_send = 16;
+                }
+
+                recieved += spi_transmit(inst->spi_regs, buf + sent, to_send, recBuf);
+                sent += to_send;
+            }
+        }
+        // transmits whole buffer
+        else
+        {
+            recieved += spi_transmit(inst->spi_regs, buf, len, NULL);
+        }
+    }
+
+    //sets oled to take commands
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~OLED_DC);
+
+    // turns on screen
+    data[0] = 0xAF;
+    spi_send_buffer(inst, data, 1);
+
+    // display GDDRAM
+    data[0] = 0xA4;
+    spi_send_buffer(inst, data, 1);
+
+    return 0;
+}
+
+// definition of file operations
+struct file_operations esl_oled_fops = {
+    .write = esl_oled_write,
+};
+
+
 static int spi_reset(struct esl_oled_instance *inst)
 {
 
@@ -334,8 +335,6 @@ static int spi_reset(struct esl_oled_instance *inst)
     // printk(KERN_INFO "turn on SPE in reset 0x%08X\n", reg_read(inst->spi_regs, IPISR));
 
     reg_write(inst->spi_regs, SPICR, MASTER_MODE | MASTER_INHIBIT | SLAVE_ASSERT | SPE);
-
-
 
     return 0;
 }
@@ -477,7 +476,7 @@ static int oled_setup(struct esl_oled_instance *inst)
     printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
 
     // turns on screen
-    data[0] = 0xA5;
+    data[0] = 0xAF;
     spi_send_buffer(inst, data, 1);
 
     // data[0] = 0x81;

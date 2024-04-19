@@ -156,9 +156,48 @@ int drawEmptyRectangle(int startX, int startY, int endX, int endY, int state)
     return 0;
 }
 
-/* @brief Read PBM header
+/* @brief draws circle
+   @param centerX x coordinate of center point
+   @param centerY y coordinate of center point
+   @param radius raiuds of desired circle
+   @return 0 on success, < 0 on error */
+int drawCircle(int centerX, int centerY, int radius)
+{
+    if (radius > 0 && radius < 5)
+    {
+        switch (radius)
+        {
+        case 1:
+            fbPixelDraw(centerX, centerY, 1);
+            break;
+        case 2:
+            fbPixelDraw(centerX, centerY, 1);
+            fbPixelDraw(centerX + 1, centerY, 1);
+            fbPixelDraw(centerX - 1, centerY, 1);
+            fbPixelDraw(centerX, centerY + 1, 1);
+            fbPixelDraw(centerX, centerY - 1, 1);
+            break;
+        case 3:
+            drawEmptyRectangle(centerX - 1, centerY - 1, centerX + 1, centerY + 1, 1);
+            break;
+        case 4:
+            fbPixelDraw(centerX, centerY, 1);
+            fbPixelDraw(centerX + 1, centerY, 1);
+            fbPixelDraw(centerX - 1, centerY + 1, 1);
+            fbPixelDraw(centerX - 1, centerY + 2, 1);
+            fbPixelDraw(centerX + 2, centerY - 1, 1);
+            fbPixelDraw(centerX + 2, centerY - 2, 1);
+            fbPixelDraw(centerX, centerY - 3, 1);
+            fbPixelDraw(centerX + 1, centerY - 3, 1);
+            break;
+        }
+    }
+    return 0;
+}
+
+/* @brief Sends buf to OLED char device
    @param fp file pointer
-   @param dest destination struct
+   @param buf byte buffer pointer
    @return 0 on success, < 0 on error */
 int sendBuffer(FILE *fp, char *buf)
 {
@@ -184,6 +223,4 @@ void main()
         printf("%sFailed to open the character device");
         return -1;
     }
-
-
 }
