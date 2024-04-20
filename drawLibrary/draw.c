@@ -196,20 +196,31 @@ int drawCircle(int centerX, int centerY, int radius)
 }
 
 /* @brief Sends buf to OLED char device
-   @param fp file pointer
+   @param fd file pointer
    @param buf byte buffer pointer
    @return 0 on success, < 0 on error */
-int sendBuffer(FILE *fp, char *buf)
+int sendBuffer(FILE *fd, char *buf)
 {
+    int i;
+    unsigned char byte;
+
+    for (i = 0; i < ((OLED_HEIGHT * OLED_WIDTH) / 8); i++)
+    {
+
+        if (write(fd, buf, sizeof(buf)) < 0)
+        {
+            printf("%sWrite to character device failed");
+        }
+    }
 
     return 0;
 }
 
 void main()
 {
-    FILE *fp;
+    FILE *fd;
 
-    int i, j;
+    int i, j, err;
 
     for (i = 0; i < (OLED_HEIGHT * OLED_WIDTH) / 8; i++)
     {
@@ -217,10 +228,23 @@ void main()
     }
 
     // Open the character device
-    int fd = open("/dev/zedoled1", O_WRONLY);
+    fd = open("/dev/zedoled1", O_WRONLY);
     if (fd < 0)
     {
         printf("%sFailed to open the character device");
         return -1;
     }
+
+    fbPixelDraw(2,2,1);
+
+    sendBuffer(fd, buf);
+
+    err = close(fd);
+
+    if (err == -1)
+    {
+        printf("Close operation failed - enable");
+        return -1;
+    }
+
 }
