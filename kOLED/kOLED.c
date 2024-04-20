@@ -239,7 +239,6 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
 
     reg_write(base, SPICR, (reg_read(base, SPICR) | (MASTER_INHIBIT)) & ~(SPE));
 
-
     return recieved;
 }
 
@@ -255,6 +254,19 @@ void spi_send_byte(struct esl_oled_instance *inst, unsigned char data)
     spi_send_buffer(inst, &data, 1);
 }
 
+static int reset_circuit(struct esl_oled_instance *inst){
+
+    // clear res
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_RES));
+
+    usleep_range(100, 100);
+
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) | (OLED_RES));
+
+    usleep_range(100, 100);
+
+    return 0;
+}
 
 /* Character device File Ops */
 static ssize_t esl_oled_write(struct file *f,
@@ -262,51 +274,60 @@ static ssize_t esl_oled_write(struct file *f,
                               loff_t *offset)
 {
     struct esl_oled_instance *inst = file_to_instance(f);
-    unsigned int sent, to_send, recieved, written, to_write;
+
+    unsigned int sent, to_send, received;
     unsigned char data[10];
     char recBuf[10];
 
-    //sets oled to take data
+    //reset_circuit(inst);
+
+    // sets oled to take data
     reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) | OLED_DC);
 
     sent = 0;
 
     if (!inst)
     {
-        return -ENOMEM;
+        printk(KERN_INFO "Instance not found\n");
+        return -ENODEV;
     }
-    while (len > 0)
+
+    // transmits buffer in chunks (fifo size)
+    if (len > 16)
     {
-        // Copy from user space to kernel buffer
-        if (copy_from_user(inst->fifo_buf, buf + sent, to_send))
+
+        while (sent < len)
         {
+
+            to_send = len - sent;
+            if (to_send > 16)
+            {
+                to_send = 16;
+            }
+
+            // Copy from user space to kernel buffer
+            if (copy_from_user(inst->fifo_buf, buf + sent, to_send))
+            {
+                printk(KERN_INFO "Copy from user in 'if' failed\n");
+                return -EFAULT;
+            }
+
+            received += spi_transmit(inst->spi_regs, inst->fifo_buf + sent, to_send, recBuf);
+            sent += to_send;
+        }
+    }
+    // transmits whole buffer
+    else
+    {
+        if (copy_from_user(inst->fifo_buf, buf, to_send))
+        {
+            printk(KERN_INFO "Copy from user in else failed\n");
             return -EFAULT;
         }
-
-        // transmits buffer in chunks (fifo size)
-        if (len > 16)
-        {
-
-            while (sent < len)
-            {
-                to_send = len - sent;
-                if (to_send > 16)
-                {
-                    to_send = 16;
-                }
-
-                recieved += spi_transmit(inst->spi_regs, buf + sent, to_send, recBuf);
-                sent += to_send;
-            }
-        }
-        // transmits whole buffer
-        else
-        {
-            recieved += spi_transmit(inst->spi_regs, buf, len, NULL);
-        }
+        received += spi_transmit(inst->spi_regs, inst->fifo_buf, len, NULL);
     }
 
-    //sets oled to take commands
+    // sets oled to take commands
     reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~OLED_DC);
 
     // turns on screen
@@ -324,7 +345,6 @@ static ssize_t esl_oled_write(struct file *f,
 struct file_operations esl_oled_fops = {
     .write = esl_oled_write,
 };
-
 
 static int spi_reset(struct esl_oled_instance *inst)
 {
@@ -364,79 +384,66 @@ static int oled_setup(struct esl_oled_instance *inst)
 
     usleep_range(1000, 1000);
 
-    printk(KERN_ERR "turn off %s %d\n", __FUNCTION__, __LINE__);
     // turn off
     data[0] = 0xA5;
     spi_send_buffer(inst, data, 1);
 
-    printk(KERN_ERR "clock divide %s %d\n", __FUNCTION__, __LINE__);
     // set clock divide
     data[0] = 0xD5;
     data[1] = 0x80;
     spi_send_buffer(inst, data, 2);
 
-    printk(KERN_ERR "multiplex %s %d\n", __FUNCTION__, __LINE__);
     // set multiplex
     data[0] = 0xA8;
     data[1] = 0x1F;
     spi_send_buffer(inst, data, 2);
 
-    printk(KERN_ERR "display offset %s %d\n", __FUNCTION__, __LINE__);
     // set display offset
     data[0] = 0xD3;
     data[1] = 0x00;
     spi_send_buffer(inst, data, 2);
 
-    printk(KERN_ERR "display line %s %d\n", __FUNCTION__, __LINE__);
     // set display line
     data[0] = 0x40;
     spi_send_buffer(inst, data, 1);
 
-    printk(KERN_ERR "charge pump %s %d\n", __FUNCTION__, __LINE__);
     // set charge pump
     data[0] = 0x8D;
     data[1] = 0x14;
     spi_send_buffer(inst, data, 2);
 
-    printk(KERN_ERR "segment remap  %s %d\n", __FUNCTION__, __LINE__);
     // segment remap
     data[0] = 0xA0;
     spi_send_buffer(inst, data, 1);
 
-    //??
+    //COM OUTPUT SCAN DIRECTION
     data[0] = 0xC0;
     spi_send_buffer(inst, data, 1);
 
-    printk(KERN_ERR "com pin hardware config %s %d\n", __FUNCTION__, __LINE__);
     // com pins hardware config
     data[0] = 0xDA;
     data[1] = 0x00;
     spi_send_buffer(inst, data, 2);
 
-    printk(KERN_ERR "contrast control %s %d\n", __FUNCTION__, __LINE__);
     // contrast control
     data[0] = 0x81;
     data[1] = 0x7F;
     spi_send_buffer(inst, data, 2);
 
-    printk(KERN_ERR "precharge %s %d\n", __FUNCTION__, __LINE__);
     // pre charge period
     data[0] = 0xD9;
     data[1] = 0xF1;
     spi_send_buffer(inst, data, 2);
 
-    printk(KERN_ERR "vcomh deselet %s %d\n", __FUNCTION__, __LINE__);
     // vcomh deselect level
     data[0] = 0xDB;
     data[1] = 0x40;
     spi_send_buffer(inst, data, 2);
 
-    printk(KERN_ERR "GDDRAM fill %s %d\n", __FUNCTION__, __LINE__);
     // entire display on
     data[0] = 0xA4;
     spi_send_buffer(inst, data, 1);
 
-    printk(KERN_ERR "normal / inverse %s %d\n", __FUNCTION__, __LINE__);
     // normal / inverse display
     data[0] = 0xA6;
     spi_send_buffer(inst, data, 1);
@@ -469,38 +476,8 @@ static int oled_setup(struct esl_oled_instance *inst)
     data[2] = 0x03;
     spi_send_buffer(inst, data, 3);
 
-    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
     data[0] = OLED_ENABLE;
     spi_send_buffer(inst, data, 1);
-
-    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
-
-    // turns on screen
-    data[0] = 0xAF;
-    spi_send_buffer(inst, data, 1);
-
-    // data[0] = 0x81;
-    // data[1] = 0x0F;
-    // spi_send_buffer(inst, data, 2);
-
-    // data[0] = 0xA0;
-    // spi_send_buffer(inst, data, 1);
-
-    // data[0] = 0xC0;
-    // spi_send_buffer(inst, data, 1);
-
-    // data[0] = 0xDA;
-    // data[1] = 0x00;
-    // spi_send_buffer(inst, data, 2);
-
-    // data[0] = 0xA6;
-    // spi_send_buffer(inst, data, 1);
-
-    // data[0] = 0xAF;
-    // spi_send_buffer(inst, data, 1);
-
-    // data[0] = 0xA5;
-    // spi_send_buffer(inst, data, 1);
 
     return 0;
 }

@@ -13,7 +13,7 @@
 #define OLED_WIDTH 128
 #define OLED_HEIGHT 32
 
-char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
+unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
 
 /* @brief draws pixel
    @param x pixel x coordinate
@@ -29,7 +29,7 @@ int fbPixelDraw(int x, int y, int state)
     pgNum = y / 8;
 
     // 4 pages per column  + pg offset
-    byte_offset = x * (OLED_WIDTH / 8) + pgNum;
+    byte_offset = x * (OLED_HEIGHT / 8) + pgNum;
 
     if (state == 1)
     {
@@ -199,7 +199,7 @@ int drawCircle(int centerX, int centerY, int radius)
    @param fd file pointer
    @param buf byte buffer pointer
    @return 0 on success, < 0 on error */
-int sendBuffer(FILE *fd, char *buf)
+int sendBuffer(int fd, char *buf)
 {
     int i;
     unsigned char byte;
@@ -207,18 +207,18 @@ int sendBuffer(FILE *fd, char *buf)
     for (i = 0; i < ((OLED_HEIGHT * OLED_WIDTH) / 8); i++)
     {
 
-        if (write(fd, buf, sizeof(buf)) < 0)
+        if (write(fd, buf, (OLED_HEIGHT * OLED_WIDTH) / 8) < 0)
         {
-            printf("%sWrite to character device failed");
+            printf("Write to character device failed\n");
         }
     }
 
     return 0;
 }
 
-void main()
+int main()
 {
-    FILE *fd;
+    int fd;
 
     int i, j, err;
 
@@ -227,24 +227,32 @@ void main()
         buf[i] = 0;
     }
 
-    // Open the character device
-    fd = open("/dev/zedoled1", O_WRONLY);
-    if (fd < 0)
+    fbPixelDraw(2,2, 1);
+
+    // // Open the character device
+    // fd = open("/dev/zedoled1", O_WRONLY);
+    // if (fd < 0)
+    // {
+    //     printf("%sFailed to open the character device");
+    //     return -1;
+    // }
+
+    for (i = 0; i < 4; i++)
     {
-        printf("%sFailed to open the character device");
-        return -1;
+        for (j = 0; j < 128; j++)
+        {
+            printf("%x", buf[j * 4 + i]);
+        }
+        printf("\n");
     }
 
-    fbPixelDraw(2,2,1);
+    // sendBuffer(fd, buf);
 
-    sendBuffer(fd, buf);
+    // err = close(fd);
 
-    err = close(fd);
-
-    if (err == -1)
-    {
-        printf("Close operation failed - enable");
-        return -1;
-    }
-
+    // if (err == -1)
+    // {
+    //     printf("Close operation failed - enable");
+    //     return -1;
+    // }
 }
