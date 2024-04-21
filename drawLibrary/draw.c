@@ -20,7 +20,7 @@ unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
    @param y pixel y coordinate
    @param state 1 = on 0 = off
    @return 0 on success, < 0 on error */
-int drawPixel(int x, int y, int state)
+void drawPixel(int x, int y, int state)
 {
     int byte_offset;
     int pgNum;
@@ -43,7 +43,7 @@ int drawPixel(int x, int y, int state)
         buf[byte_offset] &= ~(1 << (y % 8)); // Clear the bit at position y % 8
     }
 
-    return 0;
+
 }
 
 /* @brief draws line between 2 points
@@ -51,9 +51,8 @@ int drawPixel(int x, int y, int state)
    @param startY pixel y coordinate
    @param endX pixel x coordinate
    @param endY pixel y coordinate
-   @param state 1 = on 0 = off
-   @return 0 on success, < 0 on error */
-int drawLine(int startX, int startY, int endX, int endY, int state)
+   @param state 1 = on 0 = off */
+void drawLine(int startX, int startY, int endX, int endY, int state)
 {
     int dx, dy;
 
@@ -134,7 +133,6 @@ int drawLine(int startX, int startY, int endX, int endY, int state)
     //     }
     // }
 
-    return 0;
 }
 
 /* @brief draws empty rectangle between 2 points
@@ -142,9 +140,8 @@ int drawLine(int startX, int startY, int endX, int endY, int state)
    @param startY pixel y coordinate
    @param endX pixel x coordinate
    @param endY pixel y coordinate
-   @param state 1 = on 0 = off
-   @return 0 on success, < 0 on error */
-int drawEmptyRectangle(int startX, int startY, int endX, int endY, int state)
+   @param state 1 = on 0 = off */
+void drawEmptyRectangle(int startX, int startY, int endX, int endY, int state)
 {
 
     drawLine(startX, startY, startX, endY, state);
@@ -152,7 +149,6 @@ int drawEmptyRectangle(int startX, int startY, int endX, int endY, int state)
     drawLine(endX, startY, endX, endY, state);
     drawLine(startX, endY, endX, endY, state);
 
-    return 0;
 }
 
 /* @brief draws circle
@@ -160,7 +156,7 @@ int drawEmptyRectangle(int startX, int startY, int endX, int endY, int state)
    @param centerY y coordinate of center point
    @param radius raiuds of desired circle
    @return 0 on success, < 0 on error */
-int drawCircle(int centerX, int centerY, int radius)
+void drawCircle(int centerX, int centerY, int radius)
 {
     if (radius > 0 && radius < 5)
     {
@@ -191,7 +187,6 @@ int drawCircle(int centerX, int centerY, int radius)
             break;
         }
     }
-    return 0;
 }
 
 
@@ -212,8 +207,7 @@ void debugPrintBuffer(){
 /* @brief draws characer on OLED
    @param Char character to draw
    @param origin_x origin x cooridnate
-   @param origin_y origin y cordinate
-   @return 0 on success, < 0 on error */
+   @param origin_y origin y cordinate */
 void drawCharacter(char Character, int origin_x, int origin_y)
 {
     // every Char is 4 wide and 5 tall
@@ -730,9 +724,8 @@ void drawCharacter(char Character, int origin_x, int origin_y)
 }
 
 /* @brief draws string on OLED
-   @param str string
-   @param row picks which number to write text to
-   @return 0 on success, < 0 on error */
+   @param str string pointer
+   @param row picks which number to write text to */
 void drawWord(char *str, int row)
 {
     int i = 0;
@@ -750,7 +743,7 @@ void drawWord(char *str, int row)
 
 
 /* @brief Sends buf to OLED char device
-   @param fd file pointer
+   @param fd file to write to 
    @param buf byte buffer pointer
    @return 0 on success, < 0 on error */
 int sendBuffer(int fd, char *buf)
@@ -764,28 +757,18 @@ int sendBuffer(int fd, char *buf)
         if (write(fd, buf, (OLED_HEIGHT * OLED_WIDTH) / 8) < 0)
         {
             printf("Write to Char device failed\n");
+            return -1;
         }
     }
 
     return 0;
 }
 
-int main()
-{
+/* @brief Opens OLED char device
+   @return 0 on success, < 0 on error */
+int oledOpen(){
     int fd;
 
-    int i, j, err;
-
-    for (i = 0; i < (OLED_HEIGHT * OLED_WIDTH) / 8; i++)
-    {
-        buf[i] = 0;
-    }
-
-    // drawPixel(2,2, 1);
-
-    // drawPixel(4,4, 1);
-
-    // Open the Char device
     fd = open("/dev/zedoled1", O_WRONLY);
 
     if (fd < 0)
@@ -794,17 +777,14 @@ int main()
         return -1;
     }
 
-    drawPixel(0,0,1);
-    drawPixel(1,1,1);
-    drawPixel(127,31,1);
+    return fd;
+}
 
-    drawEmptyRectangle(2,2, 88,20,1);
+/* @brief Closes OLED char device
+   @return 0 on success, < 0 on error */
+int oledClose(int fd){
+    int err;
 
-    //send that mf
-    sendBuffer(fd, buf);
-
-
-    // close
     err = close(fd);
 
     if (err == -1)
@@ -812,4 +792,5 @@ int main()
         printf("Close operation failed - enable");
         return -1;
     }
+    return 0;
 }
