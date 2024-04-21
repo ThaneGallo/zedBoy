@@ -10,10 +10,7 @@
 #include <limits.h>
 #include <sys/mman.h>
 
-#define OLED_WIDTH 128
-#define OLED_HEIGHT 32
-
-unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
+#include "draw.h"
 
 /* @brief draws pixel
    @param x pixel x coordinate
@@ -31,7 +28,7 @@ void drawPixel(int x, int y, int state)
     // 4 pages per column  + pg offset
     byte_offset = x * (OLED_HEIGHT / 8) + pgNum;
 
-  // Adjust pixel state in buf based on the provided coordinates
+    // Adjust pixel state in buf based on the provided coordinates
     if (state == 1)
     {
         // Set the corresponding bit in the byte
@@ -42,8 +39,6 @@ void drawPixel(int x, int y, int state)
         // Clear the corresponding bit in the byte
         buf[byte_offset] &= ~(1 << (y % 8)); // Clear the bit at position y % 8
     }
-
-
 }
 
 /* @brief draws line between 2 points
@@ -132,7 +127,6 @@ void drawLine(int startX, int startY, int endX, int endY, int state)
 
     //     }
     // }
-
 }
 
 /* @brief draws empty rectangle between 2 points
@@ -148,7 +142,6 @@ void drawEmptyRectangle(int startX, int startY, int endX, int endY, int state)
     drawLine(startX, startY, endX, startY, state);
     drawLine(endX, startY, endX, endY, state);
     drawLine(startX, endY, endX, endY, state);
-
 }
 
 /* @brief draws circle
@@ -189,8 +182,8 @@ void drawCircle(int centerX, int centerY, int radius)
     }
 }
 
-
-void debugPrintBuffer(){
+void debugPrintBuffer()
+{
     unsigned int i, j;
 
     // for checking buffer contents
@@ -692,10 +685,154 @@ void drawCharacter(char Character, int origin_x, int origin_y)
 
         break;
 
-    case ' ':
+    case '0':
+        drawPixel(origin_x, origin_y, 1);
+        drawPixel(origin_x + 1, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y, 1);
+        drawPixel(origin_x + 3, origin_y, 1);
+        drawPixel(origin_x, origin_y + 4, 1);
+        drawPixel(origin_x + 1, origin_y + 4, 1);
+        drawPixel(origin_x + 2, origin_y + 4, 1);
+        drawPixel(origin_x + 3, origin_y + 4, 1);
+        drawPixel(origin_x, origin_y + 1, 1);
+        drawPixel(origin_x, origin_y + 2, 1);
+        drawPixel(origin_x, origin_y + 3, 1);
+        drawPixel(origin_x + 3, origin_y + 1, 1);
+        drawPixel(origin_x + 3, origin_y + 2, 1);
+        drawPixel(origin_x + 3, origin_y + 3, 1);
         break;
 
-    default: 
+    case '1':
+        drawPixel(origin_x + 1, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y + 1, 1);
+        drawPixel(origin_x + 2, origin_y + 2, 1);
+        drawPixel(origin_x + 2, origin_y + 3, 1);
+        drawPixel(origin_x + 2, origin_y + 4, 1);
+        break;
+
+    case '2':
+        drawPixel(origin_x, origin_y, 1);
+        drawPixel(origin_x + 1, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y, 1);
+        drawPixel(origin_x + 3, origin_y, 1);
+        drawPixel(origin_x + 3, origin_y + 1, 1);
+        drawPixel(origin_x + 2, origin_y + 2, 1);
+        drawPixel(origin_x + 1, origin_y + 3, 1);
+        drawPixel(origin_x, origin_y + 4, 1);
+        drawPixel(origin_x + 1, origin_y + 4, 1);
+        drawPixel(origin_x + 2, origin_y + 4, 1);
+        drawPixel(origin_x + 3, origin_y + 4, 1);
+        break;
+
+    case '3':
+        drawPixel(origin_x, origin_y, 1);
+        drawPixel(origin_x + 1, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y, 1);
+        drawPixel(origin_x + 3, origin_y, 1);
+        drawPixel(origin_x + 3, origin_y + 1, 1);
+        drawPixel(origin_x + 2, origin_y + 2, 1);
+        drawPixel(origin_x + 3, origin_y + 2, 1);
+        drawPixel(origin_x + 3, origin_y + 3, 1);
+        drawPixel(origin_x + 2, origin_y + 4, 1);
+        drawPixel(origin_x + 1, origin_y + 4, 1);
+        drawPixel(origin_x, origin_y + 4, 1);
+        break;
+
+    case '4':
+        drawPixel(origin_x, origin_y, 1);
+        drawPixel(origin_x, origin_y + 1, 1);
+        drawPixel(origin_x, origin_y + 2, 1);
+        drawPixel(origin_x + 1, origin_y + 2, 1);
+        drawPixel(origin_x + 2, origin_y + 2, 1);
+        drawPixel(origin_x + 2, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y + 1, 1);
+        drawPixel(origin_x + 2, origin_y + 3, 1);
+        drawPixel(origin_x + 2, origin_y + 4, 1);
+        break;
+
+    case '5':
+        drawPixel(origin_x + 3, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y, 1);
+        drawPixel(origin_x + 1, origin_y, 1);
+        drawPixel(origin_x, origin_y, 1);
+        drawPixel(origin_x, origin_y + 1, 1);
+        drawPixel(origin_x, origin_y + 2, 1);
+        drawPixel(origin_x + 1, origin_y + 2, 1);
+        drawPixel(origin_x + 2, origin_y + 2, 1);
+        drawPixel(origin_x + 3, origin_y + 2, 1);
+        drawPixel(origin_x + 3, origin_y + 3, 1);
+        drawPixel(origin_x + 2, origin_y + 4, 1);
+        drawPixel(origin_x + 1, origin_y + 4, 1);
+        drawPixel(origin_x, origin_y + 4, 1);
+        break;
+
+    case '6':
+        drawPixel(origin_x + 3, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y, 1);
+        drawPixel(origin_x + 1, origin_y, 1);
+        drawPixel(origin_x, origin_y, 1);
+        drawPixel(origin_x, origin_y + 1, 1);
+        drawPixel(origin_x, origin_y + 2, 1);
+        drawPixel(origin_x + 1, origin_y + 2, 1);
+        drawPixel(origin_x + 2, origin_y + 2, 1);
+        drawPixel(origin_x + 3, origin_y + 2, 1);
+        drawPixel(origin_x + 3, origin_y + 1, 1);
+        drawPixel(origin_x + 2, origin_y + 4, 1);
+        drawPixel(origin_x + 1, origin_y + 4, 1);
+        drawPixel(origin_x, origin_y + 4, 1);
+        break;
+
+    case '7':
+        drawPixel(origin_x, origin_y, 1);
+        drawPixel(origin_x + 1, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y, 1);
+        drawPixel(origin_x + 3, origin_y, 1);
+        drawPixel(origin_x + 3, origin_y + 1, 1);
+        drawPixel(origin_x + 2, origin_y + 2, 1);
+        drawPixel(origin_x + 1, origin_y + 3, 1);
+        drawPixel(origin_x, origin_y + 4, 1);
+        break;
+
+    case '8':
+        drawPixel(origin_x, origin_y, 1);
+        drawPixel(origin_x + 1, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y, 1);
+        drawPixel(origin_x + 3, origin_y, 1);
+        drawPixel(origin_x, origin_y + 1, 1);
+        drawPixel(origin_x + 3, origin_y + 1, 1);
+        drawPixel(origin_x, origin_y + 2, 1);
+        drawPixel(origin_x + 1, origin_y + 2, 1);
+        drawPixel(origin_x + 2, origin_y + 2, 1);
+        drawPixel(origin_x + 3, origin_y + 2, 1);
+        drawPixel(origin_x, origin_y + 3, 1);
+        drawPixel(origin_x + 3, origin_y + 3, 1);
+        drawPixel(origin_x, origin_y + 4, 1);
+        drawPixel(origin_x + 1, origin_y + 4, 1);
+        drawPixel(origin_x + 2, origin_y + 4, 1);
+        drawPixel(origin_x + 3, origin_y + 4, 1);
+        break;
+
+    case '9':
+        drawPixel(origin_x, origin_y, 1);
+        drawPixel(origin_x + 1, origin_y, 1);
+        drawPixel(origin_x + 2, origin_y, 1);
+        drawPixel(origin_x + 3, origin_y, 1);
+        drawPixel(origin_x, origin_y + 1, 1);
+        drawPixel(origin_x + 3, origin_y + 1, 1);
+        drawPixel(origin_x, origin_y + 2, 1);
+        drawPixel(origin_x + 1, origin_y + 2, 1);
+        drawPixel(origin_x + 2, origin_y + 2, 1);
+        drawPixel(origin_x + 3, origin_y + 2, 1);
+        drawPixel(origin_x + 3, origin_y + 3, 1);
+        drawPixel(origin_x, origin_y + 4, 1);
+        drawPixel(origin_x + 1, origin_y + 4, 1);
+        drawPixel(origin_x + 2, origin_y + 4, 1);
+        drawPixel(origin_x + 3, origin_y + 4, 1);
+        break;
+
+    default:
+
         drawPixel(0 + origin_x, 0 + origin_y, 1);
         drawPixel(1 + origin_x, 0 + origin_y, 1);
         drawPixel(2 + origin_x, 0 + origin_y, 1);
@@ -741,9 +878,8 @@ void drawWord(char *str, int row)
     }
 }
 
-
 /* @brief Sends buf to OLED char device
-   @param fd file to write to 
+   @param fd file to write to
    @param buf byte buffer pointer
    @return 0 on success, < 0 on error */
 int sendBuffer(int fd, char *buf)
@@ -766,7 +902,8 @@ int sendBuffer(int fd, char *buf)
 
 /* @brief Opens OLED char device
    @return file descriptor on success, < 0 on error */
-int oledOpen(){
+int oledOpen()
+{
     int fd;
 
     fd = open("/dev/zedoled1", O_WRONLY);
@@ -783,7 +920,8 @@ int oledOpen(){
 /* @brief Closes OLED char device
     @param fd file descirptor for zedoled device
    @return 0 on success, < 0 on error */
-int oledClose(int fd){
+int oledClose(int fd)
+{
     int err;
 
     err = close(fd);
