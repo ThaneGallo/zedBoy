@@ -256,9 +256,9 @@ int main()
 
     fbPixelDraw(0,0,1);
     fbPixelDraw(1,1,1);
-    fbPixelDraw(120,31,1);
+    fbPixelDraw(127,31,1);
 
-    debugPrintBuffer();
+    drawEmptyRectangle(2,2, 88,20,1);
 
     //send that mf
     sendBuffer(fd, buf);

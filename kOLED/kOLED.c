@@ -203,9 +203,9 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
     // writes buffer to tx fifo
     while (size--)
     {
-        printk(KERN_INFO "send %x\n", *buf);
+        
         reg_write(base, DTR, *(buf++));
-        // printk(KERN_INFO " in loop | 0x%08X\n", reg_read(base, IPISR));
+    
     }
 
     // asserts slave
@@ -223,7 +223,7 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
         if (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
         {
             recBuf[recieved++] = reg_read(base, DRR);
-            // reg_write(base, SPICR, reg_read(base, SPICR) | RX_RESET);
+           
         }
     }
 
@@ -231,7 +231,7 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
     while (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
     {
         recBuf[recieved++] = reg_read(base, DRR);
-        // reg_write(base, SPICR, reg_read(base, SPICR) | RX_RESET);
+    
     }
 
     // deselect slave
@@ -279,7 +279,6 @@ static ssize_t esl_oled_write(struct file *f,
     unsigned int sent, to_send, received;
     unsigned char data[10];
     char recBuf[512];
-    unsigned long dummy;
 
 
     // sets oled to take data
@@ -312,19 +311,17 @@ static ssize_t esl_oled_write(struct file *f,
                 printk(KERN_INFO "Copy from user in 'if' failed\n");
                 return -EFAULT;
             }
-
-            printk(KERN_INFO "BEFORE FOR LOOP");
             
-            int loop;
-            for(loop = 0; loop < 16; loop++){
-            printk(KERN_ERR "%u ", inst->fifo_buf[loop]);
-            }
+            // int loop;
+            // for(loop = 0; loop < 16; loop++){
+            // printk(KERN_ERR "%x ", inst->fifo_buf[loop]);
+            // }
 
-             printk(KERN_INFO "after FOR LOOP");
+            //  printk(KERN_INFO "after FOR LOOP");
     
             
 
-            received += spi_transmit(inst->spi_regs, inst->fifo_buf + sent, to_send, recBuf);
+            received += spi_transmit(inst->spi_regs, inst->fifo_buf, to_send, recBuf);
             sent += to_send;
         }
     }
