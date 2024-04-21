@@ -20,7 +20,7 @@ unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
    @param y pixel y coordinate
    @param state 1 = on 0 = off
    @return 0 on success, < 0 on error */
-int fbPixelDraw(int x, int y, int state)
+int drawPixel(int x, int y, int state)
 {
     int byte_offset;
     int pgNum;
@@ -65,7 +65,7 @@ int drawLine(int startX, int startY, int endX, int endY, int state)
     // pixel has no length and draws itself
     if ((dy == 0) && (dx == 0))
     {
-        fbPixelDraw(startX, startY, state);
+        drawPixel(startX, startY, state);
     }
 
     // draws lines left / right
@@ -76,7 +76,7 @@ int drawLine(int startX, int startY, int endX, int endY, int state)
         {
             for (i = 0; i < dx; i++)
             {
-                fbPixelDraw(startX + i, startY, state);
+                drawPixel(startX + i, startY, state);
             }
         }
         // left
@@ -84,7 +84,7 @@ int drawLine(int startX, int startY, int endX, int endY, int state)
         {
             for (i = 0; i + 1 > dx; i--)
             {
-                fbPixelDraw(startX + i, startY, state);
+                drawPixel(startX + i, startY, state);
             }
         }
     }
@@ -97,7 +97,7 @@ int drawLine(int startX, int startY, int endX, int endY, int state)
         {
             for (j = 0; j < dy; j++)
             {
-                fbPixelDraw(startX, startY + j, state);
+                drawPixel(startX, startY + j, state);
             }
         }
         // down
@@ -105,7 +105,7 @@ int drawLine(int startX, int startY, int endX, int endY, int state)
         {
             for (j = 0; j + 1 > dy; j--)
             {
-                fbPixelDraw(startX, startY + j, state);
+                drawPixel(startX, startY + j, state);
             }
         }
     }
@@ -167,27 +167,27 @@ int drawCircle(int centerX, int centerY, int radius)
         switch (radius)
         {
         case 1:
-            fbPixelDraw(centerX, centerY, 1);
+            drawPixel(centerX, centerY, 1);
             break;
         case 2:
-            fbPixelDraw(centerX, centerY, 1);
-            fbPixelDraw(centerX + 1, centerY, 1);
-            fbPixelDraw(centerX - 1, centerY, 1);
-            fbPixelDraw(centerX, centerY + 1, 1);
-            fbPixelDraw(centerX, centerY - 1, 1);
+            drawPixel(centerX, centerY, 1);
+            drawPixel(centerX + 1, centerY, 1);
+            drawPixel(centerX - 1, centerY, 1);
+            drawPixel(centerX, centerY + 1, 1);
+            drawPixel(centerX, centerY - 1, 1);
             break;
         case 3:
             drawEmptyRectangle(centerX - 1, centerY - 1, centerX + 1, centerY + 1, 1);
             break;
         case 4:
-            fbPixelDraw(centerX, centerY, 1);
-            fbPixelDraw(centerX + 1, centerY, 1);
-            fbPixelDraw(centerX - 1, centerY + 1, 1);
-            fbPixelDraw(centerX - 1, centerY + 2, 1);
-            fbPixelDraw(centerX + 2, centerY - 1, 1);
-            fbPixelDraw(centerX + 2, centerY - 2, 1);
-            fbPixelDraw(centerX, centerY - 3, 1);
-            fbPixelDraw(centerX + 1, centerY - 3, 1);
+            drawPixel(centerX, centerY, 1);
+            drawPixel(centerX + 1, centerY, 1);
+            drawPixel(centerX - 1, centerY + 1, 1);
+            drawPixel(centerX - 1, centerY + 2, 1);
+            drawPixel(centerX + 2, centerY - 1, 1);
+            drawPixel(centerX + 2, centerY - 2, 1);
+            drawPixel(centerX, centerY - 3, 1);
+            drawPixel(centerX + 1, centerY - 3, 1);
             break;
         }
     }
@@ -209,6 +209,546 @@ void debugPrintBuffer(){
     }
 }
 
+/* @brief draws characer on OLED
+   @param Char character to draw
+   @param origin_x origin x cooridnate
+   @param origin_y origin y cordinate
+   @return 0 on success, < 0 on error */
+void drawCharacter(char Character, int origin_x, int origin_y)
+{
+    // every Char is 4 wide and 5 tall
+    switch (Character)
+    {
+    case 'a':
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+        drawPixel(3 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+        break;
+
+    case 'b':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'c':
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'd':
+
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(3 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'e':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'f':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'g':
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+        drawPixel(3 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'h':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+        drawPixel(3 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'i':
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 1 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 3 + origin_y, 1);
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'j':
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(3 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'k':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(2 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(2 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'l':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+        break;
+
+    case 'm':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(4 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(1 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+        drawPixel(4 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+        drawPixel(4 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(4 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(4 + origin_x, 4 + origin_y, 1);
+        break;
+
+    case 'n':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(1 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+        drawPixel(3 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+        break;
+
+    case 'o':
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(3 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'p':
+
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'q':
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(3 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(2 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'r':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(2 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 's':
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 't':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'u':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(3 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'v':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(2 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(2 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'w':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(4 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(4 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(4 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(2 + origin_x, 3 + origin_y, 1);
+        drawPixel(4 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'x':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(2 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(2 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'y':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(2 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case 'z':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(1 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+        break;
+
+    case ':':
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(1 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(1 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+
+        break;
+
+    case ' ':
+        break;
+
+    default: 
+        drawPixel(0 + origin_x, 0 + origin_y, 1);
+        drawPixel(1 + origin_x, 0 + origin_y, 1);
+        drawPixel(2 + origin_x, 0 + origin_y, 1);
+        drawPixel(3 + origin_x, 0 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 1 + origin_y, 1);
+        drawPixel(1 + origin_x, 1 + origin_y, 1);
+        drawPixel(2 + origin_x, 1 + origin_y, 1);
+        drawPixel(3 + origin_x, 1 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 2 + origin_y, 1);
+        drawPixel(1 + origin_x, 2 + origin_y, 1);
+        drawPixel(2 + origin_x, 2 + origin_y, 1);
+        drawPixel(3 + origin_x, 2 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 3 + origin_y, 1);
+        drawPixel(1 + origin_x, 3 + origin_y, 1);
+        drawPixel(2 + origin_x, 3 + origin_y, 1);
+        drawPixel(3 + origin_x, 3 + origin_y, 1);
+
+        drawPixel(0 + origin_x, 4 + origin_y, 1);
+        drawPixel(1 + origin_x, 4 + origin_y, 1);
+        drawPixel(2 + origin_x, 4 + origin_y, 1);
+        drawPixel(3 + origin_x, 4 + origin_y, 1);
+    }
+}
+
+/* @brief draws string on OLED
+   @param str string
+   @param row picks which number to write text to
+   @return 0 on success, < 0 on error */
+void drawWord(char *str, int row)
+{
+    int i = 0;
+    int origin_y, origin_x = 1;
+
+    origin_y = origin_y + 4 * row;
+
+    while (str[i] != '\0')
+    {
+        drawChar(str[i], origin_x, origin_y);
+        i++;
+        origin_x += 5;
+    }
+}
+
+
 /* @brief Sends buf to OLED char device
    @param fd file pointer
    @param buf byte buffer pointer
@@ -223,7 +763,7 @@ int sendBuffer(int fd, char *buf)
 
         if (write(fd, buf, (OLED_HEIGHT * OLED_WIDTH) / 8) < 0)
         {
-            printf("Write to character device failed\n");
+            printf("Write to Char device failed\n");
         }
     }
 
@@ -241,22 +781,22 @@ int main()
         buf[i] = 0;
     }
 
-    // fbPixelDraw(2,2, 1);
+    // drawPixel(2,2, 1);
 
-    // fbPixelDraw(4,4, 1);
+    // drawPixel(4,4, 1);
 
-    // Open the character device
+    // Open the Char device
     fd = open("/dev/zedoled1", O_WRONLY);
 
     if (fd < 0)
     {
-        printf("%sFailed to open the character device");
+        printf("%sFailed to open the Char device");
         return -1;
     }
 
-    fbPixelDraw(0,0,1);
-    fbPixelDraw(1,1,1);
-    fbPixelDraw(127,31,1);
+    drawPixel(0,0,1);
+    drawPixel(1,1,1);
+    drawPixel(127,31,1);
 
     drawEmptyRectangle(2,2, 88,20,1);
 
