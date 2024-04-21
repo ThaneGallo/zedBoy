@@ -765,7 +765,7 @@ int sendBuffer(int fd, char *buf)
 }
 
 /* @brief Opens OLED char device
-   @return 0 on success, < 0 on error */
+   @return file descriptor on success, < 0 on error */
 int oledOpen(){
     int fd;
 
@@ -781,6 +781,7 @@ int oledOpen(){
 }
 
 /* @brief Closes OLED char device
+    @param fd file descirptor for zedoled device
    @return 0 on success, < 0 on error */
 int oledClose(int fd){
     int err;
