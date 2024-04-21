@@ -22,7 +22,7 @@ unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
    @return 0 on success, < 0 on error */
 int fbPixelDraw(int x, int y, int state)
 {
-    char byte_offset;
+    int byte_offset;
     int pgNum;
 
     // page = 1 byte
@@ -31,15 +31,16 @@ int fbPixelDraw(int x, int y, int state)
     // 4 pages per column  + pg offset
     byte_offset = x * (OLED_HEIGHT / 8) + pgNum;
 
+  // Adjust pixel state in buf based on the provided coordinates
     if (state == 1)
     {
-        // pulls high original pixel state for chosen byte
-        buf[byte_offset] = buf[byte_offset] | y;
+        // Set the corresponding bit in the byte
+        buf[byte_offset] |= (1 << (y % 8)); // Set the bit at position y % 8
     }
     else
     {
-        // pulls low original pixel state for chosen byte
-        buf[byte_offset] = buf[byte_offset] & ~y;
+        // Clear the corresponding bit in the byte
+        buf[byte_offset] &= ~(1 << (y % 8)); // Clear the bit at position y % 8
     }
 
     return 0;
@@ -76,7 +77,6 @@ int drawLine(int startX, int startY, int endX, int endY, int state)
             for (i = 0; i < dx; i++)
             {
                 fbPixelDraw(startX + i, startY, state);
-                printf("in pixel draw right\n");
             }
         }
         // left
@@ -85,7 +85,6 @@ int drawLine(int startX, int startY, int endX, int endY, int state)
             for (i = 0; i + 1 > dx; i--)
             {
                 fbPixelDraw(startX + i, startY, state);
-                printf("in pixel draw left \n");
             }
         }
     }
@@ -195,6 +194,21 @@ int drawCircle(int centerX, int centerY, int radius)
     return 0;
 }
 
+
+void debugPrintBuffer(){
+    unsigned int i, j;
+
+    // for checking buffer contents
+    for (i = 0; i < 4; i++)
+    {
+        for (j = 0; j < 128; j++)
+        {
+            printf("%x", buf[j * 4 + i]);
+        }
+        printf("\n");
+    }
+}
+
 /* @brief Sends buf to OLED char device
    @param fd file pointer
    @param buf byte buffer pointer
@@ -227,32 +241,35 @@ int main()
         buf[i] = 0;
     }
 
-    fbPixelDraw(2,2, 1);
+    // fbPixelDraw(2,2, 1);
 
-    // // Open the character device
-    // fd = open("/dev/zedoled1", O_WRONLY);
-    // if (fd < 0)
-    // {
-    //     printf("%sFailed to open the character device");
-    //     return -1;
-    // }
+    // fbPixelDraw(4,4, 1);
 
-    for (i = 0; i < 4; i++)
+    // Open the character device
+    fd = open("/dev/zedoled1", O_WRONLY);
+
+    if (fd < 0)
     {
-        for (j = 0; j < 128; j++)
-        {
-            printf("%x", buf[j * 4 + i]);
-        }
-        printf("\n");
+        printf("%sFailed to open the character device");
+        return -1;
     }
 
-    // sendBuffer(fd, buf);
+    fbPixelDraw(0,0,1);
+    fbPixelDraw(1,1,1);
+    fbPixelDraw(120,31,1);
 
-    // err = close(fd);
+    debugPrintBuffer();
 
-    // if (err == -1)
-    // {
-    //     printf("Close operation failed - enable");
-    //     return -1;
-    // }
+    //send that mf
+    sendBuffer(fd, buf);
+
+
+    // close
+    err = close(fd);
+
+    if (err == -1)
+    {
+        printf("Close operation failed - enable");
+        return -1;
+    }
 }

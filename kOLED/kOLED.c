@@ -187,8 +187,7 @@ static void print_debug(void *__iomem base)
 static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int size, unsigned char *recBuf)
 {
     unsigned int spisr, recieved = 0;
-
-    // printk(KERN_INFO "SPISR beginning of spi| 0x%08X\n", reg_read(base, IPISR));
+    unsigned char dummy;
 
     // setups master mode and inhibit
     reg_write(base, SPICR, reg_read(base, SPICR) | MASTER_MODE | MASTER_INHIBIT);
@@ -196,22 +195,21 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
     // clear both fifos
     reg_write(base, SPICR, reg_read(base, SPICR) | TX_RESET | RX_RESET);
 
-    // printk(KERN_INFO "post reset | 0x%08X\n", reg_read(base, IPISR));
-
-    // asserts slave
-    reg_write(base, SPISSR, 0x00);
 
     // print_debug(base);
 
-    // printk(KERN_INFO "size before loop %i", size);
+    printk(KERN_INFO "size before loop %i", size);
 
     // writes buffer to tx fifo
     while (size--)
     {
-        // printk(KERN_INFO "send 0x%x\n", *buf);
+        printk(KERN_INFO "send %x\n", *buf);
         reg_write(base, DTR, *(buf++));
         // printk(KERN_INFO " in loop | 0x%08X\n", reg_read(base, IPISR));
     }
+
+    // asserts slave
+    reg_write(base, SPISSR, 0x00);
 
     // disable master mode and enable SPE
     reg_write(base, SPICR, (reg_read(base, SPICR) & ~(MASTER_INHIBIT)) | SPE);
@@ -224,14 +222,16 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
 
         if (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
         {
-            reg_write(base, SPICR, reg_read(base, SPICR) | RX_RESET);
+            recBuf[recieved++] = reg_read(base, DRR);
+            // reg_write(base, SPICR, reg_read(base, SPICR) | RX_RESET);
         }
     }
 
     // in case anything is left in rx fifo
     while (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
     {
-        reg_write(base, SPICR, reg_read(base, SPICR) | RX_RESET);
+        recBuf[recieved++] = reg_read(base, DRR);
+        // reg_write(base, SPICR, reg_read(base, SPICR) | RX_RESET);
     }
 
     // deselect slave
@@ -254,7 +254,8 @@ void spi_send_byte(struct esl_oled_instance *inst, unsigned char data)
     spi_send_buffer(inst, &data, 1);
 }
 
-static int reset_circuit(struct esl_oled_instance *inst){
+static int reset_circuit(struct esl_oled_instance *inst)
+{
 
     // clear res
     reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_RES));
@@ -277,9 +278,9 @@ static ssize_t esl_oled_write(struct file *f,
 
     unsigned int sent, to_send, received;
     unsigned char data[10];
-    char recBuf[10];
+    char recBuf[512];
+    unsigned long dummy;
 
-    //reset_circuit(inst);
 
     // sets oled to take data
     reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) | OLED_DC);
@@ -312,6 +313,17 @@ static ssize_t esl_oled_write(struct file *f,
                 return -EFAULT;
             }
 
+            printk(KERN_INFO "BEFORE FOR LOOP");
+            
+            int loop;
+            for(loop = 0; loop < 16; loop++){
+            printk(KERN_ERR "%u ", inst->fifo_buf[loop]);
+            }
+
+             printk(KERN_INFO "after FOR LOOP");
+    
+            
+
             received += spi_transmit(inst->spi_regs, inst->fifo_buf + sent, to_send, recBuf);
             sent += to_send;
         }
@@ -337,6 +349,8 @@ static ssize_t esl_oled_write(struct file *f,
     // display GDDRAM
     data[0] = 0xA4;
     spi_send_buffer(inst, data, 1);
+
+    // dummy = reg_read(inst->spi_regs, DRR);
 
     return 0;
 }
@@ -416,7 +430,7 @@ static int oled_setup(struct esl_oled_instance *inst)
     data[0] = 0xA0;
     spi_send_buffer(inst, data, 1);
 
-    //COM OUTPUT SCAN DIRECTION
+    // COM OUTPUT SCAN DIRECTION
     data[0] = 0xC0;
     spi_send_buffer(inst, data, 1);
 
@@ -476,8 +490,11 @@ static int oled_setup(struct esl_oled_instance *inst)
     data[2] = 0x03;
     spi_send_buffer(inst, data, 3);
 
-    data[0] = OLED_ENABLE;
+    data[0] = 0xA6;
     spi_send_buffer(inst, data, 1);
+
+    // data[0] = OLED_ENABLE;
+    // spi_send_buffer(inst, data, 1);
 
     return 0;
 }
