@@ -9,11 +9,14 @@
 #include <linux/of_device.h>
 #include <asm/io.h>
 
+// #include <time.h>
+#include "Snake.h"
+
 // Module Name
 #define MODULE_NAME "snakePlayer"
 
 // GPIO sizes
-#define BTN_GPIO_COUNT 4
+#define BTN_GPIO_COUNT 5
 
 #define MEM_REG_SIZE 0x100000
 
@@ -29,6 +32,9 @@
 static int irqnum; // SW GPIO IRQ Number
 static void __iomem *btn_regs; // BTN GPIO registers
 static unsigned int btn_gpio_base = 901;
+
+// snake game
+static SnakeGame game;
 
 // get current switch states
 static unsigned int get_button_states(void)
@@ -59,12 +65,44 @@ static void initialize_gpio(void)
 static irqreturn_t btn_irq_handler(int irq, void* dev_id)
 {
     unsigned int states;
+    enum Direction dir;
 
     // Debugging message
-    printk(KERN_INFO "Button IRQ handler\n");
+    // printk(KERN_INFO "Button IRQ handler\n");
 
     states = get_button_states();
 
+    // printk(KERN_INFO "Button states: %x\n", states);
+
+    if (states & 0x01) {
+        printk(KERN_INFO "MIDDLE\n");
+        dir = STOP;
+    }
+
+    if (states & 0x02) {
+        printk(KERN_INFO "DOWN\n");
+        dir = DOWN;
+    }
+
+    if (states & 0x04) {
+        printk(KERN_INFO "LEFT\n");
+        dir = LEFT;
+    }
+
+    if (states & 0x08) {
+        printk(KERN_INFO "RIGHT\n");
+        dir = RIGHT;
+    }
+
+    if (states & 0x10) {
+        printk(KERN_INFO "UP\n");
+        dir = UP;
+    }
+
+    // temp game logic
+    SnakeGame_input(&game, dir);
+    SnakeGame_logic(&game);
+    SnakeGame_draw(&game);
 
     // WRITE TO OLED DRIVER INFO HERE
 
@@ -91,10 +129,17 @@ static void enable_interrupts(void)
     iowrite32(0x3, btn_regs + IER_REG);
     printk(KERN_INFO "IER: %x\n", ioread32(btn_regs + IER_REG));
 
-    // // 2. enable bit 0 in the MER register (ME bit), 
-    // // HIE is bit 1("If software testing of hardware interrupts is to be performed, the HIE bit must remain at its reset value of 0.")
-    // // writel(0x03, sw_regs + MER_REG);
-    // iowrite32(0x01, sw_regs + MER_REG);
+    // 2. enable bit 0 in the MER register (ME bit), 
+    // HIE is bit 1("If software testing of hardware interrupts is to be performed, the HIE bit must remain at its reset value of 0.")
+    // iowrite32(0x01, btn_regs + MER_REG);
+}
+
+static void init_snake_game(void)
+{
+    // Initialize snake game
+    // srand(time(0));
+    SnakeGame_setup(&game);
+    SnakeGame_draw(&game);
 }
 
 // initialize module
@@ -107,7 +152,7 @@ static int mymod_init(void)
     struct gpio_desc* gdesc;
     struct resource *res;
 
-    // printk(KERN_INFO "btn_gpio_base = %u\n", btn_gpio_base);
+    printk(KERN_INFO "btn_gpio_base = %u\n", btn_gpio_base);
 
     // find GPIO description by GPIO number passed
     gdesc = gpio_to_desc(btn_gpio_base);
@@ -177,6 +222,9 @@ static int mymod_init(void)
     // initialize GPIOs
     initialize_gpio();
 
+    // initialize snake game
+    init_snake_game();
+
     printk(KERN_INFO "Snake Player module loaded\n");
 
     // A non 0 return means init_module failed; module can't be loaded.
@@ -191,6 +239,8 @@ static void mymod_exit(void)
 
   // Unmap memory region
   iounmap(btn_regs);
+
+  printk(KERN_INFO "Snake Player module removed\n");
 }
 
 // declare initialization function
