@@ -10,8 +10,10 @@
 
 #include "draw.h"
 
-#define WIDTH 8
-#define HEIGHT 32
+#define WIDTH 32
+#define HEIGHT 8
+
+int board[HEIGHT][WIDTH] = {0};
 
 int score = 0;
 
@@ -22,7 +24,6 @@ typedef struct
 } Tetromino;
 
 Tetromino currentPiece, pieces[7];
-int board[HEIGHT][WIDTH] = {0};
 struct termios orig_termios;
 
 void reset_terminal_mode()
@@ -214,6 +215,50 @@ void init_piece()
 
 void draw(int fd)
 {
+    clearScreen(fd);
+    for (int x = 0; x < WIDTH; x++)
+    {
+        for (int y = 0; y < HEIGHT; y++)
+        {
+            int pieceOccupied = 0;
+            if (board[y][x])
+            {
+                for (int dx = 0; dx < 4; dx++)
+                {
+                    for (int dy = 0; dy < 4; dy++)
+                    {
+                        drawPixel(4 * x + dx, 4 * y + dy, 1);
+                    }
+                }
+            }
+            for (int dy = 0; dy < 4; dy++)
+            {
+                for (int dx = 0; dx < 4; dx++)
+                {
+                    if (currentPiece.shape[dy][dx] && x == currentPiece.x + dx && y == currentPiece.y + dy)
+                    {
+                        pieceOccupied = 1;
+                        break;
+                    }
+                }
+                if (pieceOccupied)
+                {
+                    for (int dx = 0; dx < 4; dx++)
+                    {
+                        for (int dy = 0; dy < 4; dy++)
+                        {
+                            drawPixel(4 * x + dx, 4 * y + dy, 1); // Draw each block as a 4x4 pixel block
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    }
+    sendBuffer(fd, buf);
+}
+
+{
     clearScreen(fd); // Clear the OLED buffer
 
     // Draw the Tetris board and the current piece
@@ -264,30 +309,30 @@ void update()
         char key = getch();
         switch (key)
         {
-        case 'a': // left
-            if (!check_collision(currentPiece.x - 1, currentPiece.y))
-                currentPiece.x--;
-            break;
-        case 'd': // right
+        case 's': // Move down becomes move right
             if (!check_collision(currentPiece.x + 1, currentPiece.y))
                 currentPiece.x++;
             break;
-        case ' ': // rotate
+        case 'w': // Move up becomes move left
+            if (!check_collision(currentPiece.x - 1, currentPiece.y))
+                currentPiece.x--;
+            break;
+        case ' ': // Rotate
             rotate_piece(1);
             if (check_collision(currentPiece.x, currentPiece.y))
-                rotate_piece(0); // undo rotation if it results in a collision
+                rotate_piece(0); // Undo rotation if it results in a collision
             break;
         }
     }
 
-    static int drop_counter = 0;
-    drop_counter++;
-    if (drop_counter >= 10)
-    {
-        drop_counter = 0;
-        if (!check_collision(currentPiece.x, currentPiece.y + 1))
+    static int move_counter = 0;
+    move_counter++;
+    if (move_counter >= 10)
+    { // Time-based movement to the right
+        move_counter = 0;
+        if (!check_collision(currentPiece.x + 1, currentPiece.y))
         {
-            currentPiece.y++;
+            currentPiece.x++;
         }
         else
         {
