@@ -166,23 +166,6 @@ static inline u32 reg_read(void *__iomem base, u32 reg)
     return ioread32(base + reg);
 }
 
-static void print_debug(void *__iomem base)
-{
-    printk(KERN_INFO "SPICR | 0x%08X\n", reg_read(base, SPICR));
-    printk(KERN_INFO "SPISR | 0x%08X\n", reg_read(base, SPISR));
-    printk(KERN_INFO "SPISSR | 0x%08X\n", reg_read(base, SPISSR));
-
-    if (reg_read(base, SPISR) & TX_EMPTY)
-    {
-        printk(KERN_DEBUG "SPITXOCC | 0x%0X\n", reg_read(base, SPITXOCC));
-    }
-    else
-    {
-        printk(KERN_DEBUG "SPITXOCC | 0x%0X\n", reg_read(base, SPITXOCC) + 1);
-    }
-
-    printk(KERN_DEBUG "IPISR | 0x%0X\n", reg_read(base, IPISR));
-}
 
 static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int size, unsigned char *recBuf)
 {
@@ -198,7 +181,7 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
 
     // print_debug(base);
 
-    printk(KERN_INFO "size before loop %i", size);
+    // printk(KERN_INFO "size before loop %i", size);
 
     // writes buffer to tx fifo
     while (size--)
@@ -215,7 +198,7 @@ static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int siz
     reg_write(base, SPICR, (reg_read(base, SPICR) & ~(MASTER_INHIBIT)) | SPE);
 
     // 10us
-    usleep_range(10, 10);
+    // usleep_range(10, 10);
 
     while (!(reg_read(base, SPISR) & TX_EMPTY))
     {
@@ -252,21 +235,6 @@ void spi_send_buffer(struct esl_oled_instance *inst, unsigned char *buf, unsigne
 void spi_send_byte(struct esl_oled_instance *inst, unsigned char data)
 {
     spi_send_buffer(inst, &data, 1);
-}
-
-static int reset_circuit(struct esl_oled_instance *inst)
-{
-
-    // clear res
-    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_RES));
-
-    usleep_range(100, 100);
-
-    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) | (OLED_RES));
-
-    usleep_range(100, 100);
-
-    return 0;
 }
 
 /* Character device File Ops */
