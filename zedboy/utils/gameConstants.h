@@ -6,7 +6,7 @@
 // #define MAX_SCORE 100
 // #define INITIAL_SPEED 5
 
-typedef void (*GameFunction)();
+typedef void (*GameFunction)(int);
 typedef void (*GameFunctionTick)(int);
 
 // GameFunction gameSetups[9];
@@ -19,6 +19,12 @@ extern int gameTick_count;  // to track the number of game ticks added
 
 extern GameFunction games[MAX_GAMES];
 extern GameFunctionTick gameTicks[MAX_GAMES];
+
+
+enum GameIdx {
+    SNAKE = 0,
+    PONG = 1,
+};
 
 enum Direction {
     STOP = 0,

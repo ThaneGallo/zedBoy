@@ -8,8 +8,8 @@
 #include <fcntl.h>
 #include "../../utils/gameConstants.h"
 
-#define WIDTH 20
-#define HEIGHT 20
+#define WIDTH 128
+#define HEIGHT 32
 
 
 typedef struct {
@@ -22,10 +22,10 @@ typedef struct {
 
 // extern SnakeGame *game;
 
-void SnakeGame_setup();
-void SnakeGame_draw(const SnakeGame *game);
-void SnakeGame_input(SnakeGame *game, int direction);
-void SnakeGame_logic(SnakeGame *game);
+void SnakeGame_setup(int fd);
+void SnakeGame_draw();
+void SnakeGame_input(int direction);
+void SnakeGame_logic();
 void SnakeGame_tick(int direction);
 
 // GameFunction SnakeGame_setup_func = SnakeGame_setup;

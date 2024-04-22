@@ -4,7 +4,6 @@
 #define OLED_WIDTH 128
 #define OLED_HEIGHT 32
 
-//buffer that holds pixel info.
 extern unsigned char buf[];
 
 

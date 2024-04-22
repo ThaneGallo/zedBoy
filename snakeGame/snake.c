@@ -67,7 +67,7 @@ void setup()
     score = 0;
 }
 
-void drawSnake(int fd)
+void SnakeGame_draw(int fd)
 {
 
     clearScreen(fd);
@@ -190,7 +190,7 @@ int main()
     setup();
     while (!gameOver)
     {
-        drawSnake(fd);
+        SnakeGame_draw(fd);
         input();
         logic();
         usleep(1000);

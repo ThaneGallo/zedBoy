@@ -12,10 +12,12 @@
 
 // there is a snake.c file in the a lower directory called snake/snake.c, also snake.h, include snake.h
 #include "../utils/gameConstants.h"
-#include "../games/snake/snake.h"
 #include "zed_gaming_menu.h"
 #include "../utils/displayImg.h"
 #include "../utils/draw.h"
+
+//include games 
+#include "../games/snake/snake.h"
 
 // example: LED GPIO Address
 #define SWITCH_GPIO_ADDR 0x41210000
@@ -52,7 +54,7 @@ int displayMenu(ZoledGamingMainMenu *menu){
   {
     if(i == menu->selected){
       //dotted versuion
-      printf("printing selected index : i %ld \n", i);
+      printf("printing selected index : i %u \n", i);
       assert(!fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,32,32,64)&& "Failed to display solid border logo");
       continue;
     }
@@ -62,8 +64,6 @@ int displayMenu(ZoledGamingMainMenu *menu){
   }
   //writes to board
   fbFlush(oledfd);
-  
-
 
 };
 
@@ -71,13 +71,12 @@ int displayMenu(ZoledGamingMainMenu *menu){
 
 
 int selectOption( ZoledGamingMainMenu *menu){
-          /*     menu->isGameSelected = 1;
+               menu->isGameSelected = 1;
+               menu->isConsoleRunning=0;
 
-                // gameSetups[0]();
-                games[menu->selected]();
+                games[menu->selected](oledfd);
                 // print whatevers in games[0]
-                printf('%s\n', games[menu->selected]); */
-               printf("not yet implimentened\n");
+              //printf('%s\n', games[menu->selected]);
               return 0;
 };
 
@@ -109,9 +108,9 @@ int progressMenu(int direction){
 /// @return 
 int progressGame(int direction){
   // readback = *REG_OFFSET(btnregs, 0);
-            if (direction == 1) {
+            if (direction == -1) {
                 menu->isGameSelected = 0;
-                menu->isConsoleRunning = 0;
+                menu->isConsoleRunning = 1;
             }
 
             gameTicks[menu->selected](direction);
@@ -258,7 +257,7 @@ int main(int argc, char** argv)
 
 
 
-  char * games[]= {Tetris_Icon, Pong_Icon, Snake_Icon,Breakout_Icon};
+  char * games[]= {Snake_Icon,Tetris_Icon, Pong_Icon,Breakout_Icon};
 
   printf("%d%d%d%d\n",LEFT,RIGHT,UP,DOWN);
 

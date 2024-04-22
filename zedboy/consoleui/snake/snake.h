@@ -6,7 +6,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include "../gameConstants.h"
+#include "../../utils/gameConstants.h"
 
 #define WIDTH 20
 #define HEIGHT 20

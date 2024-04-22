@@ -56,3 +56,5 @@ dkms.conf
 FrontEnd/zed_gaming_menu
 FrontEnd/dispayImg
 zedboy/FrontEnd/zedboy
+zedboy/zedboy
+.gitignore
