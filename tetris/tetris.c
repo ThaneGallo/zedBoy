@@ -11,6 +11,8 @@
 #define WIDTH 8
 #define HEIGHT 32
 
+int score = 0;
+
 typedef struct
 {
     int x, y;
@@ -125,6 +127,8 @@ void clear_lines()
         }
         if (complete)
         {
+            score += 10;
+
             for (int ty = y; ty > 0; ty--)
             {
                 for (int x = 0; x < WIDTH; x++)
@@ -260,6 +264,9 @@ int main()
         update();
         usleep(50000);
     }
+
+    printf("Game Over! Your score is: ");
+    printf(score);
 
     return 0;
 }
