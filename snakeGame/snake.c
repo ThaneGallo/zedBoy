@@ -207,7 +207,7 @@ int main()
         drawSnake(fd);
         input();
         logic();
-        usleep(1000);
+        // usleep(10);
     }
     return 0;
 }

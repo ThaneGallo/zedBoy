@@ -9,7 +9,8 @@
 #define WIDTH 128
 #define HEIGHT 32
 #define GAP_SIZE 7
-#define NUM_WALLS 3
+#define WALL_GAP 25
+#define NUM_WALLS 6
 
 int gameOver;
 int birdY, wallXs[NUM_WALLS], gaps[NUM_WALLS], score;
@@ -22,7 +23,7 @@ void setup()
     srand(time(NULL)); // Seed random number generator
     for (int i = 0; i < NUM_WALLS; i++)
     {
-        wallXs[i] = WIDTH - 1 + i * (WIDTH / NUM_WALLS);
+        wallXs[i] = WIDTH - (4 * WALL_GAP) + (i * WALL_GAP);
         gaps[i] = rand() % (HEIGHT - GAP_SIZE - 1) + 1;
     }
 }
@@ -72,6 +73,7 @@ void logic()
     for (int i = 0; i < NUM_WALLS; i++)
     {
         wallXs[i]--;
+
         if (wallXs[i] < 0)
         {
             wallXs[i] = WIDTH - 1;
@@ -98,6 +100,7 @@ void draw(int fd)
     // Draw walls
     for (int k = 0; k < NUM_WALLS; k++)
     {
+
         for (int y = 0; y < HEIGHT; y++)
         {
             if (y < gaps[k] || y > gaps[k] + GAP_SIZE)
@@ -123,7 +126,6 @@ int main()
         input();
         logic();
         draw(fd);
-        usleep(200000); // Game speed
     }
 
     printf("Game Over! Your score was: %d\n", score);
