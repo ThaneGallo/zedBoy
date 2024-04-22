@@ -63,25 +63,32 @@ int getch()
     }
 }
 
-void rotate_piece(int clockwise)
+void rotate_piece()
 {
     int temp[4][4];
+    memset(temp, 0, sizeof(temp));
+
+    // Store the current shape in a temporary array rotated clockwise
     for (int y = 0; y < 4; y++)
     {
         for (int x = 0; x < 4; x++)
         {
-            if (clockwise)
-            {
-                temp[x][3 - y] = currentPiece.shape[y][x]; // Rotate the piece clockwise
-            }
+            temp[x][3 - y] = currentPiece.shape[y][x];
         }
     }
+
+    // Save the old shape in case we need to revert
+    int old_shape[4][4];
+    memcpy(old_shape, currentPiece.shape, sizeof(currentPiece.shape));
+
+    // Apply the rotated shape to the current piece
     memcpy(currentPiece.shape, temp, sizeof(currentPiece.shape));
-    // After rotation, check for collisions
+
+    // Check for collision with the new shape
     if (check_collision(currentPiece.x, currentPiece.y))
     {
-        // If there's a collision, try rotating back to see if that resolves the collision
-        // However, since we do not want counter-clockwise rotation, adjustments might be needed based on the board's state
+        // Revert to old shape if there is a collision
+        memcpy(currentPiece.shape, old_shape, sizeof(currentPiece.shape));
     }
 }
 
@@ -270,36 +277,33 @@ void update()
         char key = getch();
         switch (key)
         {
-        case 'a': // Move upwards
+        case 'a': // Move left
             if (currentPiece.y > 0 && !check_collision(currentPiece.x, currentPiece.y - 1))
             {
-                currentPiece.y--; // Ensure the piece does not move off the upper boundary
+                currentPiece.y--; // Move the piece one unit to the left if no collision and within bounds
             }
             break;
-        case 'd': // Move downwards
-            if (currentPiece.y + 3 < HEIGHT && !check_collision(currentPiece.x, currentPiece.y + 1))
-            {                     // Adjust for the piece size
-                currentPiece.y++; // Ensure the piece does not move off the lower boundary
+        case 'd': // Move right
+            if (currentPiece.y + getMaxWidth(currentPiece.shape) - 1 < HEIGHT - 1 && !check_collision(currentPiece.x, currentPiece.y + 1))
+            {
+                currentPiece.y++; // Move the piece one unit to the right if no collision and within bounds
             }
             break;
         case ' ': // Rotate clockwise
-            rotate_piece(1);
-            if (check_collision(currentPiece.x, currentPiece.y))
-            {
-                rotate_piece(0); // Undo rotation if it results in a collision
-            }
+            rotate_piece();
             break;
         }
     }
 
+    // Automatic progression to the right every cycle
     static int move_counter = 0;
     move_counter++;
     if (move_counter >= 1)
-    { // Time-based automatic progression to the right
+    {
         move_counter = 0;
         if (currentPiece.x + 3 < WIDTH && !check_collision(currentPiece.x + 1, currentPiece.y))
-        { // Adjust for the piece size
-            currentPiece.x++;
+        {
+            currentPiece.x++; // Move the piece one unit to the right
         }
         else
         {
@@ -308,6 +312,23 @@ void update()
             init_piece();
         }
     }
+}
+
+// Utility to get the maximum width of the current tetromino to manage boundaries
+int getMaxWidth(int shape[4][4])
+{
+    int maxWidth = 0;
+    for (int y = 0; y < 4; y++)
+    {
+        for (int x = 0; x < 4; x++)
+        {
+            if (shape[y][x] && y + 1 > maxWidth)
+            {
+                maxWidth = y + 1;
+            }
+        }
+    }
+    return maxWidth;
 }
 
 int main()
