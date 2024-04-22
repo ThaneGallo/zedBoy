@@ -81,6 +81,10 @@ void rotate_piece(int clockwise)
         }
     }
     memcpy(currentPiece.shape, temp, sizeof(currentPiece.shape));
+    if (check_collision(currentPiece.x, currentPiece.y))
+    {                             // Check if rotation is valid
+        rotate_piece(!clockwise); // Revert if collision occurs after rotation
+    }
 }
 
 int check_collision(int x, int y)
@@ -93,12 +97,14 @@ int check_collision(int x, int y)
             int ny = y + dy;
             if (currentPiece.shape[dy][dx])
             {
-                if (nx < 0 || nx >= WIDTH || ny >= HEIGHT || (ny >= 0 && board[ny][nx]))
-                    return 1; // collision
+                if (nx >= WIDTH || ny < 0 || ny >= HEIGHT || (nx >= 0 && board[ny][nx]))
+                {
+                    return 1; // Collision
+                }
             }
         }
     }
-    return 0; // no collision
+    return 0; // No collision
 }
 
 void merge_piece()
@@ -107,7 +113,7 @@ void merge_piece()
     {
         for (int dx = 0; dx < 4; dx++)
         {
-            if (currentPiece.shape[dy][dx] && currentPiece.y + dy >= 0)
+            if (currentPiece.shape[dy][dx] && currentPiece.x + dx < WIDTH)
             {
                 board[currentPiece.y + dy][currentPiece.x + dx] = 1;
             }
@@ -117,10 +123,10 @@ void merge_piece()
 
 void clear_lines()
 {
-    for (int y = HEIGHT - 1; y >= 0; y--)
+    for (int x = WIDTH - 1; x >= 0; x--)
     {
         int complete = 1;
-        for (int x = 0; x < WIDTH; x++)
+        for (int y = 0; y < HEIGHT; y++)
         {
             if (!board[y][x])
             {
@@ -131,16 +137,18 @@ void clear_lines()
         if (complete)
         {
             score += 10;
-
-            for (int ty = y; ty > 0; ty--)
+            for (int tx = x; tx > 0; tx--)
             {
-                for (int x = 0; x < WIDTH; x++)
+                for (int y = 0; y < HEIGHT; y++)
                 {
-                    board[ty][x] = board[ty - 1][x];
+                    board[y][tx] = board[y][tx - 1];
                 }
             }
-            memset(board[0], 0, sizeof(board[0]));
-            y++;
+            for (int y = 0; y < HEIGHT; y++)
+            {
+                board[y][0] = 0;
+            }
+            x++; // Since we are clearing this column, check it again in case the above line filled it
         }
     }
 }
@@ -165,9 +173,8 @@ void init_pieces()
 
 void init_piece()
 {
-    currentPiece.x = WIDTH / 2 - 2;
-    currentPiece.y = 0;
-    // random shape for the new piece
+    currentPiece.x = 0;              // Start from the leftmost column
+    currentPiece.y = HEIGHT / 2 - 2; // Centered vertically
     int r = rand() % 7;
     memcpy(currentPiece.shape, pieces[r].shape, sizeof(currentPiece.shape));
     if (check_collision(currentPiece.x, currentPiece.y))
@@ -265,18 +272,23 @@ void update()
         char key = getch();
         switch (key)
         {
-        case 's': // Move down becomes move right
-            if (!check_collision(currentPiece.x + 1, currentPiece.y))
-                currentPiece.x++;
+        case 'a': // Rotate counter-clockwise
+            rotate_piece(0);
             break;
-        case 'w': // Move up becomes move left
-            if (!check_collision(currentPiece.x - 1, currentPiece.y))
-                currentPiece.x--;
-            break;
-        case ' ': // Rotate
+        case 'd': // Rotate clockwise
             rotate_piece(1);
-            if (check_collision(currentPiece.x, currentPiece.y))
-                rotate_piece(0); // Undo rotation if it results in a collision
+            break;
+        case 's': // Speed up the movement towards the right
+            if (!check_collision(currentPiece.x + 1, currentPiece.y))
+            {
+                currentPiece.x++;
+            }
+            else
+            {
+                merge_piece();
+                clear_lines();
+                init_piece();
+            }
             break;
         }
     }
@@ -284,7 +296,7 @@ void update()
     static int move_counter = 0;
     move_counter++;
     if (move_counter >= 10)
-    { // Time-based movement to the right
+    { // Auto-move the piece to the right
         move_counter = 0;
         if (!check_collision(currentPiece.x + 1, currentPiece.y))
         {
