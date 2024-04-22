@@ -85,19 +85,19 @@ void rotate_piece(int clockwise)
     }
 }
 
-int check_collision(int x, int y)
+int check_collision(int nx, int ny)
 {
     for (int dy = 0; dy < 4; dy++)
     {
         for (int dx = 0; dx < 4; dx++)
         {
-            int nx = x + dx;
-            int ny = y + dy;
+            int x = nx + dx;
+            int y = ny + dy;
             if (currentPiece.shape[dy][dx])
             {
-                if (nx >= WIDTH || ny < 0 || ny >= HEIGHT || (nx >= 0 && board[ny][nx]))
+                if (x >= WIDTH || y < 0 || y >= HEIGHT || (x >= 0 && board[y][x]))
                 {
-                    return 1; // Collision
+                    return 1; // Collision detected
                 }
             }
         }
@@ -111,7 +111,7 @@ void merge_piece()
     {
         for (int dx = 0; dx < 4; dx++)
         {
-            if (currentPiece.shape[dy][dx] && currentPiece.x + dx < WIDTH)
+            if (currentPiece.shape[dy][dx] && (currentPiece.x + dx < WIDTH))
             {
                 board[currentPiece.y + dy][currentPiece.x + dx] = 1;
             }
@@ -171,8 +171,8 @@ void init_pieces()
 
 void init_piece()
 {
-    currentPiece.x = 0;              // Start from the leftmost column
-    currentPiece.y = HEIGHT / 2 - 2; // Centered vertically
+    currentPiece.x = 0;              // Start from the far left of the board
+    currentPiece.y = HEIGHT / 2 - 2; // Vertically centered
     int r = rand() % 7;
     memcpy(currentPiece.shape, pieces[r].shape, sizeof(currentPiece.shape));
     if (check_collision(currentPiece.x, currentPiece.y))
@@ -270,19 +270,19 @@ void update()
         char key = getch();
         switch (key)
         {
-        case 'a': // Move left
+        case 'a': // Move upwards
             if (!check_collision(currentPiece.x, currentPiece.y - 1))
             {
-                currentPiece.x--; // Move the piece one unit to the left
+                currentPiece.y--; // Move the piece one unit upwards
             }
             break;
-        case 'd': // Move right
+        case 'd': // Move downwards
             if (!check_collision(currentPiece.x, currentPiece.y + 1))
             {
-                currentPiece.x++; // Move the piece one unit to the right
+                currentPiece.y++; // Move the piece one unit downwards
             }
             break;
-        case ' ': // Rotate clockwise when space bar is pressed
+        case ' ': // Rotate clockwise
             rotate_piece(1);
             if (check_collision(currentPiece.x, currentPiece.y))
             {
