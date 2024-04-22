@@ -6,7 +6,7 @@
 #include <time.h>
 #include "draw.h"
 
-#define WIDTH 64
+#define WIDTH 32
 #define HEIGHT 16
 
 int ballX = WIDTH / 2, ballY = HEIGHT / 2;
