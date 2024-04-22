@@ -4,178 +4,203 @@
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
+#include <errno.h>
 
-#include "Snake.h"
+#include <libzed/axi_gpio.h>
+#include <libzed/zed_common.h>
+#include <libzed/zed_oled.h>
 
+#define WIDTH 128
+#define HEIGHT 32
 
-void SnakeGame_setup(SnakeGame *game) {
-    game->gameOver = 0;
-    game->dir = STOP;
-    game->x = WIDTH / 2;
-    game->y = HEIGHT / 2;
-    game->fruitX = rand() % WIDTH;
-    game->fruitY = rand() % HEIGHT;
-    game->score = 0;
-    game->nTail = 0;
+int i, j, gameOver;
+int x, y, fruitX, fruitY, score;
+int tailX[1024], tailY[1024];
+int nTail;
+enum eDirection
+{
+    STOP = 0,
+    LEFT,
+    RIGHT,
+    UP,
+    DOWN
+};
+enum eDirection dir;
+
+int keyhit(void)
+{
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+    ch = getchar();
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+    if (ch != EOF)
+    {
+        ungetc(ch, stdin);
+        return 1;
+    }
+
+    return 0;
 }
 
-void SnakeGame_draw(const SnakeGame *game) {
-    // Implementation of draw function
-    // Output the game state
-    int i, j, k;
+void setup()
+{
+    gameOver = 0;
+    dir = STOP;
+    x = WIDTH / 2;
+    y = HEIGHT / 2;
+    fruitX = rand() % WIDTH;
+    fruitY = rand() % HEIGHT;
+    score = 0;
+}
 
-    // system("clear");
-    for (i = 0; i < WIDTH + 2; i++) {
-        printf("#");
-        // printk(KERN_INFO "#");
+void draw(struct zedoled_data *inst)
+{
+    // clear display
+    zedoled_clear(inst);
+
+    // draw fruit
+    zedoled_set_pixel(inst, fruitX, fruitY, 1);
+
+    // draw snake's tail
+    for (int k = 0; k < nTail; k++)
+    {
+        zedoled_set_pixel(inst, tailX[k], tailY[k], 1);
     }
-    printf("\n");
-    // printk(KERN_INFO "\n");
 
-    for (i = 0; i < HEIGHT; i++) {
-        for (j = 0; j < WIDTH; j++) {
-            if (j == 0) {
-                printf("#");
-                // printk(KERN_INFO "#");
-            }
+    // draw snake's head
+    zedoled_set_pixel(inst, x, y, 1);
 
-            if (i == game->y && j == game->x) {
-                printf("O");
-                // printk(KERN_INFO "O");
-            } else if (i == game->fruitY && j == game->fruitX) {
-                printf("F");
-                // printk(KERN_INFO "F");
-            } else {
-                int print = 0;
-                for (k = 0; k < game->nTail; k++) {
-                    if (game->tailX[k] == j && game->tailY[k] == i) {
-                        printf("o");
-                        // printk(KERN_INFO "o");
-                        print = 1;
-                    }
-                }
-                if (!print) {
-                    printf(" ");
-                    // printk(KERN_INFO " ");
-                }
-            }
+    // update display
+    zedoled_update(inst);
+}
 
-            if (j == WIDTH - 1) {
-                printf("#");
-                // printk(KERN_INFO "#");
+void input()
+{
+    if (keyhit())
+    {
+        switch (getchar())
+        {
+        case 'a':
+            if (dir != RIGHT)
+            {
+                dir = LEFT;
             }
+            break;
+        case 'd':
+            if (dir != LEFT)
+            {
+                dir = RIGHT;
+            }
+            break;
+        case 'w':
+            if (dir != DOWN)
+            {
+                dir = UP;
+            }
+            break;
+        case 's':
+            if (dir != UP)
+            {
+                dir = DOWN;
+            }
+            break;
+        case 'x':
+            gameOver = 1;
+            break;
         }
-        printf("\n");
-        // printk(KERN_INFO "\n");
-    }
-
-    for (i = 0; i < WIDTH + 2; i++) {
-        printf("#");
-        // printk(KERN_INFO "#");
-    }
-    printf("\n");
-    printf("Score: %d\n", game->score);
-    // printk(KERN_INFO "\n");
-    // printk(KERN_INFO "Score: %d\n", game->score);
-}
-
-
-void SnakeGame_input(SnakeGame *game, int direction) {
-    // Input handling based on GPIO interrupt
-    // Set direction accordingly
-
-    switch (direction) {
-        case 1:
-            if (game->dir != RIGHT) {
-                game->dir = LEFT;
-            }
-            break;
-        case 2:
-            if (game->dir != LEFT) {
-                game->dir = RIGHT;
-            }
-            break;
-        case 3:
-            if (game->dir != DOWN) {
-                game->dir = UP;
-            }
-            break;
-        case 4:
-            if (game->dir != UP) {
-                game->dir = DOWN;
-            }
-            break;
-        default:
-            // if stop button is pressed, end the game (DIR = 0 = STOP)
-            game->gameOver = 1;
-            break;
     }
 }
 
-void SnakeGame_logic(SnakeGame *game) {
-    // Update game logic
-    int i;
-
-    int prevX = game->tailX[0];
-    int prevY = game->tailY[0];
+void logic()
+{
+    int prevX = tailX[0];
+    int prevY = tailY[0];
     int prev2X, prev2Y;
-
-    // Update the tail position
-    game->tailX[0] = game->x;
-    game->tailY[0] = game->y;
-
-    for (i = 1; i < game->nTail; i++) {
-        prev2X = game->tailX[i];
-        prev2Y = game->tailY[i];
-        game->tailX[i] = prevX;
-        game->tailY[i] = prevY;
+    tailX[0] = x;
+    tailY[0] = y;
+    for (i = 1; i < nTail; i++)
+    {
+        prev2X = tailX[i];
+        prev2Y = tailY[i];
+        tailX[i] = prevX;
+        tailY[i] = prevY;
         prevX = prev2X;
         prevY = prev2Y;
     }
+    switch (dir)
+    {
+    case LEFT:
+        x--;
+        break;
+    case RIGHT:
+        x++;
+        break;
+    case UP:
+        y--;
+        break;
+    case DOWN:
+        y++;
+        break;
+    default:
+        break;
+    }
+    if (x >= WIDTH)
+        x = 0;
+    else if (x < 0)
+        x = WIDTH - 1;
+    if (y >= HEIGHT)
+        y = 0;
+    else if (y < 0)
+        y = HEIGHT - 1;
 
-    // Update the head position based on the direction
-    switch (game->dir) {
-        case LEFT:
-            game->x--;
-            break;
-        case RIGHT:
-            game->x++;
-            break;
-        case UP:
-            game->y--;
-            break;
-        case DOWN:
-            game->y++;
-            break;
-        default:
-            break;
+    for (i = 0; i < nTail; i++)
+        if (tailX[i] == x && tailY[i] == y)
+            gameOver = 1;
+
+    if (x == fruitX && y == fruitY)
+    {
+        score += 10;
+        fruitX = rand() % WIDTH;
+        fruitY = rand() % HEIGHT;
+        nTail++;
+    }
+}
+
+int main()
+{
+    struct zedoled_data *inst;
+    int ret;
+
+    inst = zedoled_get();
+
+    ret = zedoled_initialize(inst);
+
+    if (ret != 0)
+    {
+        printf("OLED init failed");
+        return EINVAL;
     }
 
-    // lapping around the screen
-    if (game->x >= WIDTH) {
-        game->x = 0;
-    } else if (game->x < 0) {
-        game->x = WIDTH - 1;
+    srand(time(0));
+    setup();
+    while (!gameOver)
+    {
+        draw(inst);
+        input();
+        logic();
+        usleep(100000);
     }
-
-    if (game->y >= HEIGHT) {
-        game->y = 0;
-    } else if (game->y < 0) {
-        game->y = HEIGHT - 1;
-    }
-
-    // Check if the snake has collided with itself
-    for (i = 0; i < game->nTail; i++) {
-        if (game->tailX[i] == game->x && game->tailY[i] == game->y) {
-            game->gameOver = 1;
-        }
-    }
-
-    // Check if the snake has eaten the fruit
-    if (game->x == game->fruitX && game->y == game->fruitY) {
-        game->score += 10;
-        game->fruitX = rand() % WIDTH;
-        game->fruitY = rand() % HEIGHT;
-        game->nTail++;
-    }
+    return 0;
 }
