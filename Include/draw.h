@@ -4,8 +4,10 @@
 #define OLED_WIDTH 128
 #define OLED_HEIGHT 32
 
-extern unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8] = {0};
+extern unsigned char buf[];
 
+
+int clearScreen(int fd);
 
 /* @brief draws pixel
    @param x pixel x coordinate

@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -12,6 +13,7 @@
 
 #include "draw.h"
 
+unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
 
 /* @brief draws pixel
    @param x pixel x coordinate
@@ -878,6 +880,17 @@ void drawWord(char *str, int row)
         i++;
         origin_x += 5;
     }
+}
+
+int clearScreen(int fd)
+{
+    int i;
+
+    for (i = 0; (OLED_HEIGHT * OLED_WIDTH / 8) > i; i++)
+    {
+        buf[i] = 0;
+    }
+    return 0;
 }
 
 /* @brief Sends buf to OLED char device
