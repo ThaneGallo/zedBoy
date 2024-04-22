@@ -10,6 +10,8 @@
 #include <libzed/zed_common.h>
 #include <libzed/zed_oled.h>
 
+#include "draw.h"
+
 #define WIDTH 128
 #define HEIGHT 32
 
@@ -27,32 +29,32 @@ enum eDirection
 };
 enum eDirection dir;
 
-int keyhit(void)
-{
-    struct termios oldt, newt;
-    int ch;
-    int oldf;
+// int keyhit(void)
+// {
+//     struct termios oldt, newt;
+//     int ch;
+//     int oldf;
 
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+//     tcgetattr(STDIN_FILENO, &oldt);
+//     newt = oldt;
+//     newt.c_lflag &= ~(ICANON | ECHO);
+//     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+//     oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+//     fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
 
-    ch = getchar();
+//     ch = getchar();
 
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf);
+//     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+//     fcntl(STDIN_FILENO, F_SETFL, oldf);
 
-    if (ch != EOF)
-    {
-        ungetc(ch, stdin);
-        return 1;
-    }
+//     if (ch != EOF)
+//     {
+//         ungetc(ch, stdin);
+//         return 1;
+//     }
 
-    return 0;
-}
+//     return 0;
+// }
 
 void setup()
 {
@@ -65,25 +67,23 @@ void setup()
     score = 0;
 }
 
-void draw(struct zedoled_data *inst)
+void snakeDraw(int fd)
 {
-    // clear display
-    zedoled_clear(inst);
 
     // draw fruit
-    zedoled_set_pixel(inst, fruitX, fruitY, 1);
+    drawPixel(fruitX, fruitY, 1);
 
     // draw snake's tail
     for (int k = 0; k < nTail; k++)
     {
-        zedoled_set_pixel(inst, tailX[k], tailY[k], 1);
+        drawPixel(tailX[k], tailY[k], 1);
     }
 
     // draw snake's head
-    zedoled_set_pixel(inst, x, y, 1);
+    drawPixel(x, y, 1);
 
     // update display
-    zedoled_update(inst);
+    sendBuffer(fd);
 }
 
 void input()
@@ -180,24 +180,15 @@ void logic()
 
 int main()
 {
-    struct zedoled_data *inst;
-    int ret;
+    int fd;
 
-    inst = zedoled_get();
-
-    ret = zedoled_initialize(inst);
-
-    if (ret != 0)
-    {
-        printf("OLED init failed");
-        return EINVAL;
-    }
+    fd = oledOpen();
 
     srand(time(0));
     setup();
     while (!gameOver)
     {
-        draw(inst);
+        drawSnake(fd);
         input();
         logic();
         usleep(100000);
