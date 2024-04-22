@@ -278,15 +278,15 @@ void update()
         switch (key)
         {
         case 'a': // Move left
-            if (currentPiece.y > 0 && !check_collision(currentPiece.x, currentPiece.y - 1))
+            if (currentPiece.y > 0 && !check_collision(currentPiece.x, currentPiece.y + 1))
             {
-                currentPiece.y--; // Move the piece one unit to the left if no collision and within bounds
+                currentPiece.y++; // Move the piece one unit to the left if no collision and within bounds
             }
             break;
         case 'd': // Move right
-            if (currentPiece.y + getMaxWidth(currentPiece.shape) - 1 < HEIGHT - 1 && !check_collision(currentPiece.x, currentPiece.y + 1))
+            if (currentPiece.y + getMaxWidth(currentPiece.shape) - 1 < HEIGHT - 1 && !check_collision(currentPiece.x, currentPiece.y - 1))
             {
-                currentPiece.y++; // Move the piece one unit to the right if no collision and within bounds
+                currentPiece.y--; // Move the piece one unit to the right if no collision and within bounds
             }
             break;
         case ' ': // Rotate clockwise
