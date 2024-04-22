@@ -1,6 +1,6 @@
-CFLAGS=-g -I./games/snake -I./utils
+CFLAGS=-g -I./../games/snake -I./../utils
 TARGET=zedboy
-SOURCE=zed_gaming_menu.c utils/displayImg.c utils/gameConstants.c games/snake/snake.c
+SOURCE=zed_gaming_menu.c ../utils/displayImg.c ../utils/gameConstants.c ../games/snake/snake.c
 ESL_ZEDBOARD_IP ?= qemu
 BIN_DEST=/home/root
 DEBUG_PORT=1234

@@ -11,10 +11,10 @@
 #include <time.h>
 
 // there is a snake.c file in the a lower directory called snake/snake.c, also snake.h, include snake.h
-#include "utils/gameConstants.h"
-#include "games/snake/snake.h"
+#include "../utils/gameConstants.h"
+#include "../games/snake/snake.h"
 #include "zed_gaming_menu.h"
-#include "utils/displayImg.h"
+#include "../utils/displayImg.h"
 
 // example: LED GPIO Address
 #define SWITCH_GPIO_ADDR 0x41210000
