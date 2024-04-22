@@ -91,13 +91,13 @@ int check_collision(int nx, int ny)
     {
         for (int dx = 0; dx < 4; dx++)
         {
-            int x = nx + dx;
-            int y = ny + dy;
             if (currentPiece.shape[dy][dx])
-            {
+            { // Check only occupied parts of the Tetromino
+                int x = nx + dx;
+                int y = ny + dy;
                 if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT || board[y][x])
                 {
-                    return 1; // Collision detected, including boundary checks
+                    return 1; // Collision detected
                 }
             }
         }
