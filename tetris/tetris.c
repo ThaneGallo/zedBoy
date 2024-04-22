@@ -8,6 +8,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "draw.h"
+
 #define WIDTH 8
 #define HEIGHT 32
 
@@ -174,40 +176,85 @@ void init_piece()
     }
 }
 
-void draw()
+// void draw()
+// {
+//     printf("\033[H\033[J");
+//     for (int y = 0; y < HEIGHT; y++)
+//     {
+//         for (int x = 0; x < WIDTH; x++)
+//         {
+//             if (board[y][x])
+//             {
+//                 printf("X");
+//             }
+//             else
+//             {
+//                 int printed = 0;
+//                 for (int dy = 0; dy < 4; dy++)
+//                 {
+//                     for (int dx = 0; dx < 4; dx++)
+//                     {
+//                         if (currentPiece.shape[dy][dx] && y == currentPiece.y + dy && x == currentPiece.x + dx)
+//                         {
+//                             printf("X");
+//                             printed = 1;
+//                             break;
+//                         }
+//                     }
+//                     if (printed)
+//                         break;
+//                 }
+//                 if (!printed)
+//                     printf(" ");
+//             }
+//         }
+//         printf("\n");
+//     }
+// }
+
+void draw(int fd)
 {
-    printf("\033[H\033[J");
+    clearScreen(fd); // Clear the OLED buffer
+
+    // Draw the Tetris board and the current piece
     for (int y = 0; y < HEIGHT; y++)
     {
         for (int x = 0; x < WIDTH; x++)
         {
-            if (board[y][x])
+            int isOccupied = board[y][x]; // Check if the board cell is occupied
+
+            // Check if the current piece occupies this position
+            int pieceOccupied = 0;
+            for (int dy = 0; dy < 4; dy++)
             {
-                printf("X");
+                for (int dx = 0; dx < 4; dx++)
+                {
+                    if (currentPiece.shape[dy][dx] && y == currentPiece.y + dy && x == currentPiece.x + dx)
+                    {
+                        pieceOccupied = 1;
+                        break;
+                    }
+                }
+                if (pieceOccupied)
+                    break;
             }
-            else
+
+            // Determine if this cell needs to be drawn
+            if (isOccupied || pieceOccupied)
             {
-                int printed = 0;
                 for (int dy = 0; dy < 4; dy++)
                 {
                     for (int dx = 0; dx < 4; dx++)
                     {
-                        if (currentPiece.shape[dy][dx] && y == currentPiece.y + dy && x == currentPiece.x + dx)
-                        {
-                            printf("X");
-                            printed = 1;
-                            break;
-                        }
+                        drawPixel(4 * x + dx, 4 * y + dy, 1); // Draw each block as a 4x4 pixel block
                     }
-                    if (printed)
-                        break;
                 }
-                if (!printed)
-                    printf(" ");
             }
         }
-        printf("\n");
     }
+
+    // Update display
+    sendBuffer(fd, buf);
 }
 
 void update()
@@ -258,15 +305,16 @@ int main()
     init_pieces();
     init_piece();
 
+    int fd = oledOpen();
+
     while (1)
     {
-        draw();
+        draw(fd);
         update();
-        usleep(50000);
+        usleep(5000);
     }
 
-    printf("Game Over! Your score is: ");
-    printf(score);
-
+    oledClose(fd);
+    printf("Game Over! Your score is: %d\n", score);
     return 0;
 }
