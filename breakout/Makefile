@@ -1,7 +1,7 @@
 CFLAGS = -Wall -Wextra -pedantic
-SRCS = draw.c snake.c
+SRCS = draw.c breakout.c
 OBJS = $(SRCS:.c=.o)
-TARGET = snake
+TARGET = breakout
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^

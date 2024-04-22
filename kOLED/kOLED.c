@@ -1,4 +1,3 @@
-/* LAB4 AUDIO WITH FIFO */
 
 #include <linux/device.h>
 #include <linux/kernel.h>
@@ -18,90 +17,109 @@
 #include <linux/kdev_t.h>
 #include <linux/fs.h>
 #include <asm/io.h>
+#include <linux/gpio.h>
+#include <linux/gpio/consumer.h>
+#include <linux/gpio/driver.h>
 
 #define DRIVER_NAME "esl-oled"
 
 // docs.xilinx.com/r/en-US/pg153-axi-quad-spi/Port-Descriptions
 // spi register space
-static int SRR = 0x40;        // software reg reset
-static int SPICR = 0x60;      // spi cont reg
-static int SPISR = 0x64;      // spi stat reg
-static int SPIDTR = 0x68;     // spi data trans reg
-static int SPIDRR = 0x6C;     // spi data rec reg
-static int SPISSR = 0x70;     // slave select
-static int SPI_TXFIFO = 0x78; // occupancy tx
-static int SPI_RXFIFO = 0x74; // occupancy rx
+#define SRR 0x40    // software reg reset
+#define SPICR 0x60  // spi cont reg
+#define SPISR 0x64  // spi stat reg
+#define DTR 0x68    // spi data trans reg
+#define DRR 0x6C    // spi data rec reg
+#define SPISSR 0x70 // spi slave select
+#define SPITXOCC 0x74
+#define SPIRXOCC 0x78
+#define SPI_TXFIFO 0x78 // occupancy tx
+
+// gpio macros
+#define OLED_DC (1 << 0)   // data / command
+#define OLED_RES (1 << 1)  // reset pin
+#define OLED_VBAT (1 << 2) // vcc
+#define OLED_VDD (1 << 3)  // vdd
 
 // interrupts
-static int DGIER = 0x1C; //  dev global ier
-static int IPISR = 0x20; // ip isr
-static int IPIER = 0x28; // ip ier
+#define DGIER 0x1C //  dev global ier
+#define IPISR 0x20 // ip isr
+#define IPIER 0x28 // ip ier
 
-#define DISPLAY_BUF_SZ 512 /* 32 x 128 bit monochrome  == 512 bytes        */
-#define MAX_LINE_LEN 16    /* 128 bits wide and current char width is 8 bit */
-#define MAX_ROW 4
-#define OLED_MAX_PG_CNT 4 /* number of display pages in OLED controller */
-#define OLED_CONTROLLER_PG_SZ 128
-#define OLED_CONTROLLER_CMD 0
-#define OLED_CONTROLLER_DATA 1
+// IPISR interrput bits
+#define IP_MODF (1 << 0)
+#define IP_SLAVE_MODF (1 << 1)
+#define IP_TX_EMPTY (1 << 2)
+#define TX_UNDERRUN (1 << 3)
+#define IP_IP_RX_FULL (1 << 4)
+#define IP_RX_OVERRUN (1 << 5)
+#define IP_TX_HALF_EMPTY (1 << 6)
+#define IP_SLAVE_SELECT (1 << 7)
+#define IP_RX_NOT_EMPTY (1 << 8)
+#define IP_CPOL_CPHA (1 << 9)
+
+// SPISR
+#define RX_EMPTY (1 << 0)
+#define RX_FULL (1 << 1)
+#define TX_EMPTY (1 << 2)
+#define TX_FULL (1 << 3)
+#define MODF (1 << 4)
+#define SLAVE_MODE_SELECT (1 << 5)
+#define CPOL_CPHA (1 << 6)
+#define SLAVE_ERROR (1 << 7)
+
+// SPICR thingies
+#define MASTER_INHIBIT (1 << 8)
+#define SLAVE_ASSERT (1 << 7)
+#define RX_RESET (1 << 6)
+#define TX_RESET (1 << 5)
+#define MASTER_MODE (1 << 2)
+#define SPE (1 << 1)
 
 /* commands for the OLED display controller	*/
-#define OLED_SET_PG_ADDR 0x22
-#define OLED_DISPLAY_OFF 0xAE
-#define OLED_DISPLAY_ON 0xAF
+#define OLED_ADDR_MODE 0x20
+#define OLED_SET_COL 0x21
+#define OLED_SET_PG 0x22
+#define OLED_CONTRAST 0x81
+#define OLED_SCREEN_ON 0xA5
+#define OLED_DISABLE 0xAE
+#define OLED_ENABLE 0xAF
+
 #define OLED_CONTRAST_CTRL 0x81
 #define OLED_SET_PRECHARGE_PERIOD 0xD9
 #define OLED_SET_SEGMENT_REMAP 0xA1
 #define OLED_SET_COM_DIR 0xC8
 #define OLED_SET_COM_PINS 0xDA
 
-#define OLED_CTRL_REG 0x41200000
+#define DISPLAY_BUFFER 0xA4
 
-static void __iomem *ctrl_reg_global;
+#define OLED_CTRL_REG 0x41200000
+#define GPIO_DATA 0x0008
+#define GPIO_TRI 0x000C
 
 struct esl_oled_instance
 {
-  void *__iomem spi_regs;  // oled registers
-  void *__iomem ctrl_regs; // oled registers
+    void *__iomem spi_regs;  // spi registers
+    void *__iomem gpio_regs; // oled registers
 
-  struct oled_ctrl;
+    struct cdev chr_dev; // character device
 
-  struct mutex mutex; // lock/unlock
+    unsigned char fifo_buf[15];
 
-  /* Display Buffers */
-  uint8_t disp_on;
-  uint8_t *disp_buf;
+    unsigned int irqnum;
 
-  struct spi_device *spi;
-  struct cdev chr_dev; // character device
+    dev_t devno;
 
-  dev_t devno;
-
-  // list head
-  struct list_head inst_list;
-
-  // interrupt number
-  unsigned int irqnum;
-
-  // oled fifo size
-  unsigned int fifo_size;
-
-  // fifo buffer
-  unsigned char fifo_buf[31];
+    // list head
+    struct list_head inst_list;
 };
 
-// matching table
-static struct of_device_id esl_oled_of_ids[] = {
-    {.compatible = "esl,null-spi"},
-    {}};
-
-// structure for class of all oled drivers
 struct esl_oled_driver
 {
-  dev_t first_devno;
-  struct class *class;
-  unsigned int instance_count;    // how many drivers have been instantiated?
-  struct list_head instance_list; // pointer to first instance
+    dev_t first_devno;
+    struct class *class;
+    unsigned int instance_count;    // how many drivers have been instantiated?
+    struct list_head instance_list; // pointer to first instance
 };
 
 // allocate and initialize global data (class level)
@@ -111,32 +129,112 @@ static struct esl_oled_driver driver_data = {
     .instance_list = LIST_HEAD_INIT(driver_data.instance_list),
 };
 
-// find instance from inode using minor number and linked list
 static struct esl_oled_instance *inode_to_instance(struct inode *i)
 {
-  struct esl_oled_instance *inst_iter;
-  unsigned int minor = iminor(i);
+    struct esl_oled_instance *inst_iter;
+    unsigned int minor = iminor(i);
 
-  // start with fist element in linked list (stored at class),
-  // and iterate through its elements
-  list_for_each_entry(inst_iter, &driver_data.instance_list, inst_list)
-  {
-    // found matching minor number?
-    if (MINOR(inst_iter->devno) == minor)
+    // start with fist element in linked list (stored at class),
+    // and iterate through its elements
+    list_for_each_entry(inst_iter, &driver_data.instance_list, inst_list)
     {
-      // return instance pointer of corresponding instance
-      return inst_iter;
+        // found matching minor number?
+        if (MINOR(inst_iter->devno) == minor)
+        {
+            // return instance pointer of corresponding instance
+            return inst_iter;
+        }
     }
-  }
 
-  // not found
-  return NULL;
+    // not found
+    return NULL;
 }
 
 // return instance struct based on file
 static struct esl_oled_instance *file_to_instance(struct file *f)
 {
-  return inode_to_instance(f->f_path.dentry->d_inode);
+    return inode_to_instance(f->f_path.dentry->d_inode);
+}
+
+static inline void reg_write(void *__iomem base, u32 reg, u32 value)
+{
+    iowrite32(value, base + reg);
+}
+
+static inline u32 reg_read(void *__iomem base, u32 reg)
+{
+    return ioread32(base + reg);
+}
+
+
+static int spi_transmit(void *__iomem base, unsigned char *buf, unsigned int size, unsigned char *recBuf)
+{
+    unsigned int spisr, recieved = 0;
+    unsigned char dummy;
+
+    // setups master mode and inhibit
+    reg_write(base, SPICR, reg_read(base, SPICR) | MASTER_MODE | MASTER_INHIBIT);
+
+    // clear both fifos
+    reg_write(base, SPICR, reg_read(base, SPICR) | TX_RESET | RX_RESET);
+
+
+    // print_debug(base);
+
+    // printk(KERN_INFO "size before loop %i", size);
+
+    // writes buffer to tx fifo
+    while (size--)
+    {
+        
+        reg_write(base, DTR, *(buf++));
+    
+    }
+
+    // asserts slave
+    reg_write(base, SPISSR, 0x00);
+
+    // disable master mode and enable SPE
+    reg_write(base, SPICR, (reg_read(base, SPICR) & ~(MASTER_INHIBIT)) | SPE);
+
+    // 10us
+    // usleep_range(10, 10);
+
+    while (!(reg_read(base, SPISR) & TX_EMPTY))
+    {
+
+        if (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
+        {
+            recBuf[recieved++] = reg_read(base, DRR);
+           
+        }
+    }
+
+    // in case anything is left in rx fifo
+    while (recBuf && !(reg_read(base, SPISR) & RX_EMPTY))
+    {
+        recBuf[recieved++] = reg_read(base, DRR);
+    
+    }
+
+    // deselect slave
+    reg_write(base, SPISSR, 0xFF);
+
+    reg_write(base, SPICR, (reg_read(base, SPICR) | (MASTER_INHIBIT)) & ~(SPE));
+
+    return recieved;
+}
+
+void spi_send_buffer(struct esl_oled_instance *inst, unsigned char *buf, unsigned int size)
+{
+    char recBuf[10];
+
+    spi_transmit(inst->spi_regs, buf, size, recBuf);
+}
+
+void spi_send_byte(struct esl_oled_instance *inst, unsigned char data)
+{
+    spi_send_buffer(inst, &data, 1);
 }
 
 /* Character device File Ops */
@@ -144,40 +242,82 @@ static ssize_t esl_oled_write(struct file *f,
                               const char __user *buf, size_t len,
                               loff_t *offset)
 {
+    struct esl_oled_instance *inst = file_to_instance(f);
 
-  struct esl_oled_instance *inst = file_to_instance(f);
-  ssize_t written;
-  unsigned int written = 0;
-  unsigned int space;
-  unsigned int to_write;
-  int err, i;
+    unsigned int sent, to_send, received;
+    unsigned char data[10];
+    char recBuf[512];
 
-  if (!inst)
-  {
-    // instance not found
-    return -ENOENT;
-  }
 
-  to_write = min((size_t)space, len);
+    // sets oled to take data
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) | OLED_DC);
 
-  // Copy from user space to kernel buffer
-  if (copy_from_user(inst->fifo_buf, buf + written, to_write))
-  {
-    return -EFAULT;
-  }
+    sent = 0;
 
-  // Write to AXI FIFO
-  for (i = 0; i < to_write; i += 4)
-  {
-    iowrite32(*(u32 *)(inst->fifo_buf + i), inst->regs + TDFD);
-  }
+    if (!inst)
+    {
+        printk(KERN_INFO "Instance not found\n");
+        return -ENODEV;
+    }
 
-  iowrite32(to_write, inst->regs + TLR);
+    // transmits buffer in chunks (fifo size)
+    if (len > 16)
+    {
 
-  written += to_write;
-  len -= to_write;
-}
-return written;
+        while (sent < len)
+        {
+
+            to_send = len - sent;
+            if (to_send > 16)
+            {
+                to_send = 16;
+            }
+
+            // Copy from user space to kernel buffer
+            if (copy_from_user(inst->fifo_buf, buf + sent, to_send))
+            {
+                printk(KERN_INFO "Copy from user in 'if' failed\n");
+                return -EFAULT;
+            }
+            
+            // int loop;
+            // for(loop = 0; loop < 16; loop++){
+            // printk(KERN_ERR "%x ", inst->fifo_buf[loop]);
+            // }
+
+            //  printk(KERN_INFO "after FOR LOOP");
+    
+            
+
+            received += spi_transmit(inst->spi_regs, inst->fifo_buf, to_send, recBuf);
+            sent += to_send;
+        }
+    }
+    // transmits whole buffer
+    else
+    {
+        if (copy_from_user(inst->fifo_buf, buf, to_send))
+        {
+            printk(KERN_INFO "Copy from user in else failed\n");
+            return -EFAULT;
+        }
+        received += spi_transmit(inst->spi_regs, inst->fifo_buf, len, NULL);
+    }
+
+    // sets oled to take commands
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~OLED_DC);
+
+    // turns on screen
+    data[0] = 0xAF;
+    spi_send_buffer(inst, data, 1);
+
+    // display GDDRAM
+    data[0] = 0xA4;
+    spi_send_buffer(inst, data, 1);
+
+    // dummy = reg_read(inst->spi_regs, DRR);
+
+    return 0;
 }
 
 // definition of file operations
@@ -185,240 +325,333 @@ struct file_operations esl_oled_fops = {
     .write = esl_oled_write,
 };
 
-// define the class, creates /sys/class/audio
-static struct class esl_oled_class = {
-    .name = "oled",
-    .owner = THIS_MODULE,
-};
-
-/* interrupt handler */
-static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
-{
-  struct esl_oled_instance *inst = dev_id;
-
-  // interrupt errors
-  TX_HALF_EMPTY = 0x00000040;
-  DTR_UNDERRUN = 0x00000004;
-  DTR_EMPTY = 0x00000003;
-  SLAVE_MODF = 0x00000002;
-  MODF = 0x00000001;
-
-  // Reads the interrupt status
-  ISR_reg = ioread32(inst->spi_regs + IPISR);
-
-  if (ISR_reg & (1 << MODF))
-  {
-    printk(KERN_WARNING "mode error\n");
-    return -EINVAL;
-  }
-
-  else if (ISR_reg & (1 << SLAVE_MODF))
-  {
-    printk(KERN_WARNING "slave mode error\n");
-    return -EINVAL;
-  }
-
-  else if (ISR_reg & (1 << DTR_UNDERRUN))
-  {
-    printk(KERN_WARNING "DTR_underrun!\n");
-    return -EINVAL;
-  }
-
-  else if (ISR_reg & (1 << DTR_EMPTY))
-  {
-    printk(KERN_WARNING "DTR empty!\n");
-    return -EINVAL;
-  }
-
-  else if (ISR_reg & (1 << TX_HALF_EMPTY))
-  {
-    // if half empty wait a little to fill back up
-    printk(KERN_WARNING "tx fifo half empty!\n");
-    usleep_range(1000, 2000);
-    continue;
-  }
-
-  return IRQ_HANDLED;
-}
-
-static int oled_setup(struct platform_device *pdev)
+static int spi_reset(struct esl_oled_instance *inst)
 {
 
-  // folows setup instructions as indicated in datasheet
+    // software reset
+    reg_write(inst->spi_regs, SRR, 0xa);
 
-  struct esl_oled_instance *inst = platform_get_drvdata(pdev);
+    // printk(KERN_INFO "turn on SPE in reset 0x%08X\n", reg_read(inst->spi_regs, IPISR));
 
-  iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + SPIDTR);
-  
-  //sets addressing mode
-  iowrite32(OLED_DISPLAY_OFF, inst->spi_regs + SPIDTR);
+    reg_write(inst->spi_regs, SPICR, MASTER_MODE | MASTER_INHIBIT | SLAVE_ASSERT | SPE);
 
-  //page addressing mode
-  //0x20 --> 0x10
-
-  //0xBO 0xB7
-  // lower start column addr 0x00 to 0x0F
-  // upper start 0x10 0x1F
-
-
-  //display stary line
-  
-
-  return 0;
+    return 0;
 }
 
-static int oled_spi_setup(struct platform_device *pdev)
+static int oled_setup(struct esl_oled_instance *inst)
 {
-  struct esl_oled_instance *inst = platform_get_drvdata(pdev);
 
-  unsigned long tx_rst, master_mode, CPOL, CPHA, SCK_SETUP;
-  unsigned long TX_FIFO_ALL, DRR_NOT_EMPTY, ITR_EN;
+    uint8_t data[10];
 
-  tx_rst = 0x00000010;
-  master_mode = 0x00000002;
+    spi_reset(inst);
 
-  // clocking selection
-  CPOL = 0x00000000;
-  CPHA = 0x00000000;
+    // sets gpio to outputs
+    reg_write(inst->gpio_regs, GPIO_TRI, 0);
+    reg_write(inst->gpio_regs, GPIO_DATA, 0xe);
 
-  SCK_SETUP = CPOL | CPHA;
+    usleep_range(1000, 1000);
 
-  // itr standard
-  DRR_NOT_EMPTY = 0x00000080; //?
-  TX_FIFO_ALL = 0x000000AF;
-  ITR_EN = DRR_NOT_EMPTY | TX_FIFO_ALL;
+    // clear vdd (set to 1)
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_VDD));
 
-  SPICR_SETUP = SCK_SETUP | tx_rst | master_mode;
+    // clear res
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_RES));
 
-  // software reset
-  iowrite32(0x0000000a, inst->spi_regs + SRR);
+    usleep_range(1000, 1000);
 
-  // resets tx register
-  iowrite32(SPICR_SETUP, inst->spi_regs + SPICR);
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) | (OLED_RES));
 
-  // interrupt enable
-  iowrite32(ITR_EN, inst->spi_regs + DGIER);
+    usleep_range(1000, 1000);
 
-  return 0;
+    // turn off
+    data[0] = 0xA5;
+    spi_send_buffer(inst, data, 1);
+
+    // set clock divide
+    data[0] = 0xD5;
+    data[1] = 0x80;
+    spi_send_buffer(inst, data, 2);
+
+    // set multiplex
+    data[0] = 0xA8;
+    data[1] = 0x1F;
+    spi_send_buffer(inst, data, 2);
+
+    // set display offset
+    data[0] = 0xD3;
+    data[1] = 0x00;
+    spi_send_buffer(inst, data, 2);
+
+    // set display line
+    data[0] = 0x40;
+    spi_send_buffer(inst, data, 1);
+
+    // set charge pump
+    data[0] = 0x8D;
+    data[1] = 0x14;
+    spi_send_buffer(inst, data, 2);
+
+    // segment remap
+    data[0] = 0xA0;
+    spi_send_buffer(inst, data, 1);
+
+    // COM OUTPUT SCAN DIRECTION
+    data[0] = 0xC0;
+    spi_send_buffer(inst, data, 1);
+
+    // com pins hardware config
+    data[0] = 0xDA;
+    data[1] = 0x00;
+    spi_send_buffer(inst, data, 2);
+
+    // contrast control
+    data[0] = 0x81;
+    data[1] = 0x7F;
+    spi_send_buffer(inst, data, 2);
+
+    // pre charge period
+    data[0] = 0xD9;
+    data[1] = 0xF1;
+    spi_send_buffer(inst, data, 2);
+
+    // vcomh deselect level
+    data[0] = 0xDB;
+    data[1] = 0x40;
+    spi_send_buffer(inst, data, 2);
+
+    // entire display on
+    data[0] = 0xA4;
+    spi_send_buffer(inst, data, 1);
+
+    // normal / inverse display
+    data[0] = 0xA6;
+    spi_send_buffer(inst, data, 1);
+
+    // turn off
+    data[0] = 0x8D;
+    data[1] = 0x14;
+    spi_send_buffer(inst, data, 2);
+
+    // pre charge period
+    data[0] = 0xD9;
+    data[1] = 0xF1;
+    spi_send_buffer(inst, data, 2);
+
+    reg_write(inst->gpio_regs, GPIO_DATA, reg_read(inst->gpio_regs, GPIO_DATA) & ~(OLED_VBAT));
+
+    usleep_range(100000, 100000);
+
+    data[0] = OLED_ADDR_MODE;
+    data[1] = 0x01;
+    spi_send_buffer(inst, data, 2);
+
+    data[0] = OLED_SET_COL;
+    data[1] = 0x00;
+    data[2] = 0x7F;
+    spi_send_buffer(inst, data, 3);
+
+    data[0] = OLED_SET_PG;
+    data[1] = 0x00;
+    data[2] = 0x03;
+    spi_send_buffer(inst, data, 3);
+
+    data[0] = 0xA6;
+    spi_send_buffer(inst, data, 1);
+
+    // data[0] = OLED_ENABLE;
+    // spi_send_buffer(inst, data, 1);
+
+    return 0;
 }
+
+// static irqreturn_t esl_oled_irq_handler(int irq, void *dev_id)
+// {
+//     struct esl_oled_instance *inst = dev_id;
+
+//     unsigned long ISR_reg;
+
+//     // Reads the interrupt status
+//     ISR_reg = ioread32(inst->spi_regs + IPISR);
+
+//     if (ISR_reg & (1 << MODF))
+//     {
+//         printk(KERN_WARNING "mode error\n");
+//         return -EINVAL;
+//     }
+
+//     else if (ISR_reg & (1 << SLAVE_MODF))
+//     {
+//         printk(KERN_WARNING "slave mode error\n");
+//         return -EINVAL;
+//     }
+
+//     else if (ISR_reg & (1 << TX_UNDERRUN))
+//     {
+//         printk(KERN_WARNING "DTR_underrun!\n");
+//         return -EINVAL;
+//     }
+
+//     else if (ISR_reg & (1 << TX_EMPTY))
+//     {
+//         printk(KERN_WARNING "DTR empty!\n");
+//         return -EINVAL;
+//     }
+
+//     else if (ISR_reg & (1 << TX_HALF_EMPTY))
+//     {
+//         // if half empty wait a little to fill back up
+//         printk(KERN_WARNING "tx fifo half empty!\n");
+//         usleep_range(1000, 2000);
+//     }
+
+//     if (ISR_reg & (1 << RX_OVERRUN))
+//     {
+//         printk(KERN_WARNING "Recieve OVerrun!!!\n");
+//         return -EINVAL;
+//     }
+
+//     if (ISR_reg & (1 << CPOL_CPHA))
+//     {
+//         printk(KERN_WARNING "CPOL_CPHA error\n");
+//         return -EINVAL;
+//     }
+
+//     return IRQ_HANDLED;
+// }
 
 static int esl_oled_probe(struct platform_device *pdev)
 {
-  struct esl_oled_instance *inst = NULL;
-  int err;
-  struct resource *res;
-  struct device *dev;
+    struct esl_oled_instance *inst = NULL;
+    int err = 0;
+    struct resource *res;
+    struct device *dev;
 
-  dev_t devno = MKDEV(driver_data.first_devno, driver_data.instance_count);
+    // allocate instance
+    inst = devm_kzalloc(&pdev->dev, sizeof(struct esl_oled_instance),
+                        GFP_KERNEL);
 
-  // allocate instance
-  inst = devm_kzalloc(&pdev->dev, sizeof(struct esl_oled_instance),
-                      GFP_KERNEL);
+    if (!inst)
+    {
+        // ran out of memory
+        return -ENOMEM;
+    }
 
-  if (!inst)
-  {
-    // ran out of memory
-    return -ENOMEM;
-  }
+    // set platform driver data
+    platform_set_drvdata(pdev, inst);
 
-  // set platform driver data
-  platform_set_drvdata(pdev, inst);
+    // get registers
+    res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+    if (IS_ERR(res))
+    {
+        return PTR_ERR(res);
+    }
 
-  // get registers
-  res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-  if (IS_ERR(res))
-  {
-    return PTR_ERR(res);
-  }
+    inst->spi_regs = devm_ioremap_resource(&pdev->dev, res);
+    if (IS_ERR(inst->spi_regs))
+    {
+        return PTR_ERR(inst->spi_regs);
+    }
+    // sets tri state control regs to ctrl reg global
+    inst->gpio_regs = ioremap(OLED_CTRL_REG, 0x128);
 
-  inst->spi_regs = devm_ioremap_resource(&pdev->dev, res);
-  if (IS_ERR(inst->spi_regs))
-  {
-    return PTR_ERR(inst->spi_regs);
-  }
+    if (!inst->gpio_regs)
+    {
+        printk(KERN_ERR "Failed to map physical address\n");
+        return -ENOMEM;
+    }
 
-  // get fifo depth
-  err = of_property_read_u32(pdev->dev.of_node, "fifo-size",
-                             &inst->fifo_size);
-  if (err)
-  {
-    printk(KERN_ERR "%s: failed to retrieve OLED fifo size\n",
-           DRIVER_NAME);
-    return err;
-  }
+    // get fifo depth
+    // err = of_property_read_u32(pdev->dev.of_node, "fifo-size",
+    //                            &inst->fifo_size);
+    // if (err)
+    // {
+    //   printk(KERN_ERR "%s: failed to retrieve OLED fifo size\n",
+    //          DRIVER_NAME);
+    //   return err;
+    // }
 
-  // get interrupt
-  res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-  if (IS_ERR(res))
-  {
-    return PTR_ERR(res);
-  }
+    // // get interrupt
+    // res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+    // if (IS_ERR(res))
+    // {
+    //     return PTR_ERR(res);
+    // }
 
-  err = devm_request_irq(&pdev->dev, res->start,
-                         esl_oled_irq_handler,
-                         IRQF_TRIGGER_HIGH,
-                         "zedoled", inst);
-  if (err < 0)
-  {
-    return err;
-  }
+    // err = devm_request_irq(&pdev->dev, res->start,
+    //                        esl_oled_irq_handler,
+    //                        IRQF_TRIGGER_HIGH,
+    //                        "zedoled", inst);
+    // if (err < 0)
+    // {
+    //     return err;
+    // }
 
-  // save irq number
-  inst->irqnum = res->start;
+    // // save irq number
+    // inst->irqnum = res->start;
 
-  // create character device
+    // create character device
+    // increment instance count
+    driver_data.instance_count++;
 
-  // get device number
-  inst->devno = MKDEV(MAJOR(driver_data.first_devno),
-                      driver_data.instance_count);
+    // get device number
+    inst->devno = MKDEV(MAJOR(driver_data.first_devno),
+                        driver_data.instance_count);
 
-  printk(KERN_INFO "Device probed with devno #%u", inst->devno);
-  printk(KERN_INFO "Device probed with inst count #%u", driver_data.instance_count);
-  printk(KERN_INFO "Device probed with address #%p", inst->regs);
+    // printk(KERN_INFO "Device probed with devno #%u", inst->devno);
+    // printk(KERN_INFO "Device probed with inst count #%u", driver_data.instance_count);
+    // printk(KERN_INFO "Device probed with address #%p", inst->regs);
 
-  cdev_init(&inst->chr_dev, &esl_oled_fops);
-  inst->chr_dev.owner = THIS_MODULE;
-  err = cdev_add(&inst->chr_dev, inst->devno, 1);
-  if (err)
-  {
-    printk(KERN_ERR "Failed to add cdev\n");
-    return err;
-  }
+    cdev_init(&inst->chr_dev, &esl_oled_fops);
+    inst->chr_dev.owner = THIS_MODULE;
+    err = cdev_add(&inst->chr_dev, inst->devno, 1);
+    if (err)
+    {
+        printk(KERN_ERR "Failed to add cdev\n");
+        return err;
+    }
 
-  // Device creation for sysfs
-  dev = device_create(driver_data.class, &pdev->dev, inst->devno, NULL, "zedoled%d", MINOR(inst->devno));
-  if (IS_ERR(dev))
-  {
-    cdev_del(&inst->chr_dev);
-    return PTR_ERR(dev);
-  }
+    // Device creation for sysfs
+    dev = device_create(driver_data.class, NULL, inst->devno, NULL, "zedoled%d", MINOR(inst->devno));
+    if (IS_ERR(dev))
+    {
+        cdev_del(&inst->chr_dev);
+        return PTR_ERR(dev);
+    }
 
-  printk(KERN_INFO "after device_create");
+    // put into list
+    INIT_LIST_HEAD(&inst->inst_list);
+    list_add(&inst->inst_list, &driver_data.instance_list);
 
-  // increment instance count
-  driver_data.instance_count++;
+    // ooled_setupled_spi_setup(inst);
 
-  // put into list
-  INIT_LIST_HEAD(&inst->inst_list);
-  list_add(&inst->inst_list, &driver_data.instance_list);
+    oled_setup(inst);
 
-  oled_spi_setup();
-
-  return 0;
+    return 0;
 }
 
 static int esl_oled_remove(struct platform_device *pdev)
 {
-  struct esl_oled_instance *inst = platform_get_drvdata(pdev);
+    struct esl_oled_instance *inst = platform_get_drvdata(pdev);
+    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
 
-  // cleanup and remove
-  device_destroy(&esl_oled_class, inst->devno);
+    // oled_off(inst);
 
-  // remove from list
-  list_del(&inst->inst_list);
+    iounmap(inst->gpio_regs);
+    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
+    cdev_del(&inst->chr_dev);
+    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
+    // cleanup and remove
+    device_destroy(driver_data.class, inst->devno);
+    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
+    // remove from list
+    list_del(&inst->inst_list);
 
-  return 0;
+    return 0;
 }
+
+static struct of_device_id esl_oled_of_ids[] = {
+    {.compatible = "esl,null-spi"},
+    {}};
 
 // platform driver definition
 static struct platform_driver esl_oled_driver = {
@@ -430,101 +663,51 @@ static struct platform_driver esl_oled_driver = {
     },
 };
 
-static int oled_chip_setup(unsigned long addr)
-{
-
-  int err;
-  struct gpio_chip *chip;
-  struct platform_device *pdev;
-  struct device *dev;
-  struct gpio_desc *gdesc;
-  struct resource *res;
-
-  // find GPIO description by GPIO number passed
-  gdesc = gpio_to_desc(addr);
-  if (!gdesc)
-  {
-    printk("error getting GPIO description for oled!\n");
-    return -ENODEV;
-  }
-
-  // get chip of switches gpio
-  chip = gpiod_to_chip(gdesc);
-  if (!chip)
-  {
-    printk("error getting oled GPIO chip\n");
-    return -ENODEV;
-  }
-
-  // retrieve original platform device from gpio chip,
-  // now we can extract information from the device tree node
-  dev = chip->parent;
-  pdev = to_platform_device(dev);
-
-  // printk(KERN_INFO MODULE_NAME ": Module loaded with led_gpio_base = %u, switch_gpio_base = %u\n", led_gpio_base, switch_gpio_base);
-
-  res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-  if (res == NULL)
-  {
-    return -ENOMEM;
-  }
-
-  ctrl_reg_global = devm_ioremap(dev, res->start, resource_size(res));
-
-  if (IS_ERR(ctrl_reg_global))
-  {
-    return -PTR_ERR(ctrl_reg_global);
-  }
-
-  return 0;
-}
-
 static int esl_oled_init(void)
 {
-  int err;
-  unsigned long addr = 0x41200000;
+    int err;
 
-  // alocate character device region
-  err = alloc_chrdev_region(&driver_data.first_devno, 0, 1, "zedoled");
-  if (err < 0)
-  {
-    return err;
-  }
+    // alocate character device region
+    err = alloc_chrdev_region(&driver_data.first_devno, 0, 1, "zedoled");
+    if (err < 0)
+    {
+        return err;
+    }
 
-  // although not using sysfs, still necessary in order to automatically
-  // get device node in /dev
-  driver_data.class = class_create(THIS_MODULE, "zedoled");
-  if (IS_ERR(driver_data.class))
-  {
-    return -ENOENT;
-  }
+    // although not using sysfs, still necessary in order to automatically
+    // get device node in /dev
+    driver_data.class = class_create(THIS_MODULE, "zedoled");
+    if (IS_ERR(driver_data.class))
+    {
+        return -ENOENT;
+    }
 
-  platform_driver_register(&esl_oled_driver);
+    platform_driver_register(&esl_oled_driver);
 
-  oled_chip_setup(addr);
+    printk(KERN_INFO "Sucessfully initialized OLED module\n\n");
 
-  printk(KERN_INFO "Sucessfully initialized OLED module");
-
-  return 0;
+    return 0;
 }
 
 static void esl_oled_exit(void)
 {
+    // plat driver unregister
+    platform_driver_unregister(&esl_oled_driver);
+    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
 
-  // free character device region
-  unregister_chrdev_region(driver_data.first_devno, 1);
+    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
+    // free character device region
+    unregister_chrdev_region(driver_data.first_devno, 1);
+    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
+    // remove class
+    class_destroy(driver_data.class);
+    printk(KERN_ERR "I am her %s %d\n", __FUNCTION__, __LINE__);
 
-  // remove class
-  class_destroy(driver_data.class);
-
-  // plat driver unregister
-  platform_driver_unregister(&esl_oled_driver);
-
-  printk(KERN_INFO "Sucessfully exited OLED module");
+    printk(KERN_INFO "Sucessfully exited OLED module\n");
 }
 
 module_init(esl_oled_init);
 module_exit(esl_oled_exit);
 
-MODULE_DESCRIPTION("ZedBoard Oled driver");
+MODULE_DESCRIPTION("ZedBoard OLED driver");
 MODULE_LICENSE("GPL");

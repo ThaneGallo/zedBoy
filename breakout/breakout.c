@@ -5,9 +5,10 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <draw.h>
 
-#define WIDTH 64
-#define HEIGHT 16
+#define WIDTH 128
+#define HEIGHT 32
 #define PADDLE_WIDTH 8
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
@@ -104,43 +105,93 @@ void setup()
     }
 }
 
-void draw()
+// void draw()
+// {
+//     printf("\033[H\033[J"); // clear the screen using ANSI escape codes
+//     for (int y = 0; y < HEIGHT; y++)
+//     {
+//         for (int x = 0; x < WIDTH; x++)
+//         {
+//             int print = 0;
+//             if (y == paddle.y && x >= paddle.x && x < paddle.x + paddle.width)
+//             {
+//                 printf("%c", paddle.symbol);
+//                 print = 1;
+//             }
+
+//             if (y == ball.y && x == ball.x)
+//             {
+//                 printf("%c", ball.symbol);
+//                 print = 1;
+//             }
+
+//             for (int i = 0; i < num_blocks; i++)
+//             {
+//                 if (blocks[i].active && y >= blocks[i].y && y < blocks[i].y + blocks[i].height &&
+//                     x >= blocks[i].x && x < blocks[i].x + blocks[i].width)
+//                 {
+//                     printf("%c", blocks[i].symbol);
+//                     print = 1;
+//                     break;
+//                 }
+//             }
+
+//             if (!print)
+//                 printf(" ");
+//         }
+//         printf("\n");
+//     }
+//     printf("Score: %d  Lives: %d\n", score, lives);
+// }
+
+void draw(int fd)
 {
-    printf("\033[H\033[J"); // clear the screen using ANSI escape codes
-    for (int y = 0; y < HEIGHT; y++)
+    clearScreen(fd); // Clears the OLED buffer
+
+    // Draw paddle
+    for (int x = paddle.x; x < paddle.x + paddle.width; x++)
     {
-        for (int x = 0; x < WIDTH; x++)
+        for (int dx = 0; dx < 2; dx++)
         {
-            int print = 0;
-            if (y == paddle.y && x >= paddle.x && x < paddle.x + paddle.width)
+            for (int dy = 0; dy < 2; dy++)
             {
-                printf("%c", paddle.symbol);
-                print = 1;
+                drawPixel(2 * x + dx, 2 * paddle.y + dy, 1);
             }
+        }
+    }
 
-            if (y == ball.y && x == ball.x)
-            {
-                printf("%c", ball.symbol);
-                print = 1;
-            }
+    // Draw ball
+    for (int dx = 0; dx < 2; dx++)
+    {
+        for (int dy = 0; dy < 2; dy++)
+        {
+            drawPixel(2 * ball.x + dx, 2 * ball.y + dy, 1);
+        }
+    }
 
-            for (int i = 0; i < num_blocks; i++)
+    // Draw blocks
+    for (int i = 0; i < num_blocks; i++)
+    {
+        if (blocks[i].active)
+        {
+            for (int x = blocks[i].x; x < blocks[i].x + blocks[i].width; x++)
             {
-                if (blocks[i].active && y >= blocks[i].y && y < blocks[i].y + blocks[i].height &&
-                    x >= blocks[i].x && x < blocks[i].x + blocks[i].width)
+                for (int y = blocks[i].y; y < blocks[i].y + blocks[i].height; y++)
                 {
-                    printf("%c", blocks[i].symbol);
-                    print = 1;
-                    break;
+                    for (int dx = 0; dx < 2; dx++)
+                    {
+                        for (int dy = 0; dy < 2; dy++)
+                        {
+                            drawPixel(2 * x + dx, 2 * y + dy, 1);
+                        }
+                    }
                 }
             }
-
-            if (!print)
-                printf(" ");
         }
-        printf("\n");
     }
-    printf("Score: %d  Lives: %d\n", score, lives);
+
+    // Send the buffer to the display
+    sendBuffer(fd, buf);
 }
 
 void update()
@@ -222,13 +273,17 @@ int main()
 {
     set_conio_terminal_mode();
     setup();
+
+    int fd = oledOpen();
+
     while (lives > 0 && num_blocks > 0)
     {
-        draw();
+        draw(fd);
         update();
         usleep(100000);
     }
 
     printf("Game Over! Final Score: %d\n", score);
+    oledClose(fd);
     return 0;
 }

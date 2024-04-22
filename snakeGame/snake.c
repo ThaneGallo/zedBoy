@@ -6,17 +6,19 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include <libzed/axi_gpio.h>
-#include <libzed/zed_common.h>
-#include <libzed/zed_oled.h>
+#include "draw.h"
+
+
 
 #define WIDTH 128
 #define HEIGHT 32
+
 
 int i, j, gameOver;
 int x, y, fruitX, fruitY, score;
 int tailX[1024], tailY[1024];
 int nTail;
+
 enum eDirection
 {
     STOP = 0,
@@ -65,25 +67,25 @@ void setup()
     score = 0;
 }
 
-void draw(struct zedoled_data *inst)
+void drawSnake(int fd)
 {
-    // clear display
-    zedoled_clear(inst);
+
+    clearScreen(fd);
 
     // draw fruit
-    zedoled_set_pixel(inst, fruitX, fruitY, 1);
+    drawPixel(fruitX, fruitY, 1);
 
     // draw snake's tail
     for (int k = 0; k < nTail; k++)
     {
-        zedoled_set_pixel(inst, tailX[k], tailY[k], 1);
+        drawPixel(tailX[k], tailY[k], 1);
     }
 
     // draw snake's head
-    zedoled_set_pixel(inst, x, y, 1);
+    drawPixel(x, y, 1);
 
     // update display
-    zedoled_update(inst);
+    sendBuffer(fd, buf);
 }
 
 void input()
@@ -180,27 +182,18 @@ void logic()
 
 int main()
 {
-    struct zedoled_data *inst;
-    int ret;
+    int fd;
 
-    inst = zedoled_get();
-
-    ret = zedoled_initialize(inst);
-
-    if (ret != 0)
-    {
-        printf("OLED init failed");
-        return EINVAL;
-    }
+    fd = oledOpen();
 
     srand(time(0));
     setup();
     while (!gameOver)
     {
-        draw(inst);
+        drawSnake(fd);
         input();
         logic();
-        usleep(100000);
+        usleep(1000);
     }
     return 0;
 }
