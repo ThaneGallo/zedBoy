@@ -271,13 +271,13 @@ void update()
         switch (key)
         {
         case 'a': // Move upwards
-            if (!check_collision(currentPiece.x, currentPiece.y - 1))
+            if (!check_collision(currentPiece.x, currentPiece.y + 1))
             {
                 currentPiece.y--; // Move the piece one unit upwards
             }
             break;
         case 'd': // Move downwards
-            if (!check_collision(currentPiece.x, currentPiece.y + 1))
+            if (!check_collision(currentPiece.x, currentPiece.y - 1))
             {
                 currentPiece.y++; // Move the piece one unit downwards
             }
@@ -294,7 +294,7 @@ void update()
 
     static int move_counter = 0;
     move_counter++;
-    if (move_counter >= 10)
+    if (move_counter >= 1)
     { // Time-based automatic progression to the right
         move_counter = 0;
         if (!check_collision(currentPiece.x + 1, currentPiece.y))
