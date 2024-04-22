@@ -5,7 +5,8 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <draw.h>
+
+#include "draw.h"
 
 #define WIDTH 128
 #define HEIGHT 32
