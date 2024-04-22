@@ -258,50 +258,6 @@ void draw(int fd)
     sendBuffer(fd, buf);
 }
 
-{
-    clearScreen(fd); // Clear the OLED buffer
-
-    // Draw the Tetris board and the current piece
-    for (int y = 0; y < HEIGHT; y++)
-    {
-        for (int x = 0; x < WIDTH; x++)
-        {
-            int isOccupied = board[y][x]; // Check if the board cell is occupied
-
-            // Check if the current piece occupies this position
-            int pieceOccupied = 0;
-            for (int dy = 0; dy < 4; dy++)
-            {
-                for (int dx = 0; dx < 4; dx++)
-                {
-                    if (currentPiece.shape[dy][dx] && y == currentPiece.y + dy && x == currentPiece.x + dx)
-                    {
-                        pieceOccupied = 1;
-                        break;
-                    }
-                }
-                if (pieceOccupied)
-                    break;
-            }
-
-            // Determine if this cell needs to be drawn
-            if (isOccupied || pieceOccupied)
-            {
-                for (int dy = 0; dy < 4; dy++)
-                {
-                    for (int dx = 0; dx < 4; dx++)
-                    {
-                        drawPixel(4 * x + dx, 4 * y + dy, 1); // Draw each block as a 4x4 pixel block
-                    }
-                }
-            }
-        }
-    }
-
-    // Update display
-    sendBuffer(fd, buf);
-}
-
 void update()
 {
     if (kbhit())
