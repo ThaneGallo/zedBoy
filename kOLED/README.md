@@ -2,7 +2,7 @@
 
 The OLED screen needs two different sets of memory mapped to be able to access and write information to it. First, we must follow the OLED screen datasheet for the power on sequence which can be seen below:
 
-![Power-On Sequence](images/poweron.png)
+![Power-On Sequence](images/PowerOn.png)
 
 
 
