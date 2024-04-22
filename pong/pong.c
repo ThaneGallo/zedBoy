@@ -29,6 +29,7 @@ void setup()
     playerScore = 0;
     aiScore = 0;
     gameOver = 0;
+
 }
 
 int keyhit()
@@ -133,6 +134,20 @@ void logic()
 void draw(int fd)
 {
     clearScreen(fd);
+
+    char playerScoreChar = (char)playerScore;
+    char aiScoreChar = (char)aiScore;
+
+    drawLine(WIDTH*2 + 2, 0, WIDTH*2 + 2, 32, 1);
+
+    drawLine(WIDTH*2 + 2, 8, OLED_WIDTH, 8, 1);
+    drawLine(WIDTH*2 + 2, 0, ((WIDTH*2 + 2) + OLED_WIDTH) / 2, 32, 1); 
+
+
+    // drawWord("score:", 0);
+    // drawWord(playerScore,0);
+    // drawWord(aiScore,0);
+    
 
     // Draw player paddle as a 2x2 block for each unit
     for (int i = 0; i < 4; ++i)
