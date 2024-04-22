@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -11,6 +12,8 @@
 #include <sys/mman.h>
 
 #include "draw.h"
+
+unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
 
 /* @brief draws pixel
    @param x pixel x coordinate
@@ -866,26 +869,37 @@ void drawCharacter(char Character, int origin_x, int origin_y)
 void drawWord(char *str, int row)
 {
     int i = 0;
-    int origin_y, origin_x = 1;
+    int origin_x = 1;
+    int origin_y = 1;
 
     origin_y = origin_y + 4 * row;
 
     while (str[i] != '\0')
     {
-        drawChar(str[i], origin_x, origin_y);
+        drawCharacter(str[i], origin_x, origin_y);
         i++;
         origin_x += 5;
     }
+}
+
+int clearScreen(int fd)
+{
+    int i;
+
+    for (i = 0; (OLED_HEIGHT * OLED_WIDTH / 8) > i; i++)
+    {
+        buf[i] = 0;
+    }
+    return 0;
 }
 
 /* @brief Sends buf to OLED char device
    @param fd file to write to
    @param buf byte buffer pointer
    @return 0 on success, < 0 on error */
-int sendBuffer(int fd, char *buf)
+int sendBuffer(int fd, unsigned char *buf)
 {
     int i;
-    unsigned char byte;
 
     for (i = 0; i < ((OLED_HEIGHT * OLED_WIDTH) / 8); i++)
     {
@@ -910,7 +924,7 @@ int oledOpen()
 
     if (fd < 0)
     {
-        printf("%sFailed to open the Char device");
+        printf("Failed to open the Char device");
         return -1;
     }
 

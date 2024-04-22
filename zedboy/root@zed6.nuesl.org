@@ -1,0 +1,22 @@
+# Makefile for Flappy Bird Game in C
+
+# Variables
+CC=gcc
+CFLAGS=-Wall
+TARGET=zedboy
+SRC=main.c
+
+# Build the game
+$(TARGET): $(SRC)
+	$(CC) $(CFLAGS) -o $(TARGET) $(SRC)
+
+# Run the game
+run: $(TARGET)
+	./$(TARGET)
+
+# Clean up binary files
+clean:
+	rm -f $(TARGET)
+
+# This phony target tells make that these are not actual files.
+.PHONY: clean run
