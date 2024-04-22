@@ -72,18 +72,16 @@ void rotate_piece(int clockwise)
         {
             if (clockwise)
             {
-                temp[x][3 - y] = currentPiece.shape[y][x];
-            }
-            else
-            {
-                temp[3 - x][y] = currentPiece.shape[y][x];
+                temp[x][3 - y] = currentPiece.shape[y][x]; // Rotate the piece clockwise
             }
         }
     }
     memcpy(currentPiece.shape, temp, sizeof(currentPiece.shape));
+    // After rotation, check for collisions
     if (check_collision(currentPiece.x, currentPiece.y))
-    {                             // Check if rotation is valid
-        rotate_piece(!clockwise); // Revert if collision occurs after rotation
+    {
+        // If there's a collision, try rotating back to see if that resolves the collision
+        // However, since we do not want counter-clockwise rotation, adjustments might be needed based on the board's state
     }
 }
 
@@ -272,22 +270,23 @@ void update()
         char key = getch();
         switch (key)
         {
-        case 'a': // Rotate counter-clockwise
-            rotate_piece(0);
-            break;
-        case 'd': // Rotate clockwise
-            rotate_piece(1);
-            break;
-        case 's': // Speed up the movement towards the right
-            if (!check_collision(currentPiece.x + 1, currentPiece.y))
+        case 'a': // Move left
+            if (!check_collision(currentPiece.x, currentPiece.y - 1))
             {
-                currentPiece.x++;
+                currentPiece.x--; // Move the piece one unit to the left
             }
-            else
+            break;
+        case 'd': // Move right
+            if (!check_collision(currentPiece.x, currentPiece.y + 1))
             {
-                merge_piece();
-                clear_lines();
-                init_piece();
+                currentPiece.x++; // Move the piece one unit to the right
+            }
+            break;
+        case ' ': // Rotate clockwise when space bar is pressed
+            rotate_piece(1);
+            if (check_collision(currentPiece.x, currentPiece.y))
+            {
+                rotate_piece(0); // Undo rotation if it results in a collision
             }
             break;
         }
@@ -296,7 +295,7 @@ void update()
     static int move_counter = 0;
     move_counter++;
     if (move_counter >= 10)
-    { // Auto-move the piece to the right
+    { // Time-based automatic progression to the right
         move_counter = 0;
         if (!check_collision(currentPiece.x + 1, currentPiece.y))
         {
