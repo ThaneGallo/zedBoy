@@ -8,11 +8,8 @@
 
 #include "draw.h"
 
-
-
-#define WIDTH 128
-#define HEIGHT 32
-
+#define WIDTH 64
+#define HEIGHT 16
 
 int i, j, gameOver;
 int x, y, fruitX, fruitY, score;
@@ -69,22 +66,39 @@ void setup()
 
 void drawSnake(int fd)
 {
-
     clearScreen(fd);
 
-    // draw fruit
-    drawPixel(fruitX, fruitY, 1);
-
-    // draw snake's tail
-    for (int k = 0; k < nTail; k++)
+    // Draw fruit
+    for (int dx = 0; dx < 2; dx++)
     {
-        drawPixel(tailX[k], tailY[k], 1);
+        for (int dy = 0; dy < 2; dy++)
+        {
+            drawPixel(2 * fruitX + dx, 2 * fruitY + dy, 1);
+        }
     }
 
-    // draw snake's head
-    drawPixel(x, y, 1);
+    // Draw snake's tail
+    for (int k = 0; k < nTail; k++)
+    {
+        for (int dx = 0; dx < 2; dx++)
+        {
+            for (int dy = 0; dy < 2; dy++)
+            {
+                drawPixel(2 * tailX[k] + dx, 2 * tailY[k] + dy, 1);
+            }
+        }
+    }
 
-    // update display
+    // Draw snake's head
+    for (int dx = 0; dx < 2; dx++)
+    {
+        for (int dy = 0; dy < 2; dy++)
+        {
+            drawPixel(2 * x + dx, 2 * y + dy, 1);
+        }
+    }
+
+    // Update display
     sendBuffer(fd, buf);
 }
 
