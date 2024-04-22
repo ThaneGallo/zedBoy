@@ -189,11 +189,13 @@ int fbDisplayPBM(char* path,
 /// @return 
 int fbPixelDraw(int x, int y, int value)
 {
-    int pixel_offset;
+   /*  int pixel_offset;
 
     pixel_offset = y * OLED_WIDTH + x ;
 
     frame_buffer[pixel_offset] = value;
+ */
+    drawPixel(x,y,value);
 
     return 0;
 }
@@ -215,18 +217,20 @@ void fbPrint(){
     }
 }
 
-int fbClear(){
+int fbClear(int fd){
     int i;
      for (i = 0; i < (OLED_HEIGHT * OLED_WIDTH); i++)
     {
    //     printf("bruh %d \n",i);
         frame_buffer[i] = 0;
     }
+    clearScreen(fd);
     return 0;
 }
 
-int fbFlush(){
+int fbFlush(int fd){
+  sendBuffer(fd,buf);
 
-    printf("\nnot implimented\n");
+    //printf("\nnot implimented\n");
     return 0;
 }

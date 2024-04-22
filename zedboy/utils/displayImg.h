@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include "draw.h"
 
 #ifndef DISPIMG   /* Include guard */
 #define DISPIMG
@@ -65,11 +66,11 @@ int fbPixelDraw(int x, int y, int value);
 */
 void fbPrint();
 
-int fbClear();
+int fbClear(int fd);
 
 /// @brief pushes the frame buffer to oled, and clears fb
 /// @return 
-int fbFlush();
+int fbFlush(int fd);
 
 
 

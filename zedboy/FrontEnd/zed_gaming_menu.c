@@ -15,6 +15,7 @@
 #include "../games/snake/snake.h"
 #include "zed_gaming_menu.h"
 #include "../utils/displayImg.h"
+#include "../utils/draw.h"
 
 // example: LED GPIO Address
 #define SWITCH_GPIO_ADDR 0x41210000
@@ -35,6 +36,7 @@
 
 
 //constants 
+int oledfd;
 unsigned int *switchregs;
 unsigned int *btnregs;
 ZoledGamingMainMenu *menu;
@@ -59,7 +61,7 @@ int displayMenu(ZoledGamingMainMenu *menu){
     /* code */
   }
   //writes to board
-  fbFlush();
+  fbFlush(oledfd);
   
 
 
@@ -69,29 +71,27 @@ int displayMenu(ZoledGamingMainMenu *menu){
 
 
 int selectOption( ZoledGamingMainMenu *menu){
-              menu->isGameSelected = 1;
+          /*     menu->isGameSelected = 1;
 
                 // gameSetups[0]();
                 games[menu->selected]();
                 // print whatevers in games[0]
-                printf('%s\n', games[menu->selected]);
-
+                printf('%s\n', games[menu->selected]); */
+               printf("not yet implimentened\n");
               return 0;
 };
 
 int progressMenu(int direction){
   switch (direction) {
-        case 0:
-        //
-                assert(selectOption==0);
-
+        case MIDDLE:
+                selectOption(menu);
             break;
-        case 1:
+        case LEFT:
         //left
               menu->selected = abs((menu->selected - 1) % menu->optionsSize);
               displayMenu(menu);
             break;
-        case 2:
+        case RIGHT:
         //right
               menu->selected = (menu->selected + 1) % menu->optionsSize;
               displayMenu(menu);
@@ -115,8 +115,6 @@ int progressGame(int direction){
             }
 
             gameTicks[menu->selected](direction);
-            
-            usleep(100000);
 }
 
 int read_btns(){
@@ -129,7 +127,8 @@ int read_btns(){
             printf("Buttons: %d%d%d%d%d\n", down, left, right, up, middle);
 
             //returns button code if the btn is pressed.
-              return left ? LEFT : 
+              return    middle ? MIDDLE :
+                        left ? LEFT : 
                         right ? RIGHT :
                         up ? UP : 
                         down ? DOWN : 0;
@@ -226,16 +225,21 @@ static int map_btns(unsigned int** btnregs, unsigned int btn_addr)
 
 
 void runMenu() {
+      printf("attempting to run menu\n");
 
       while ((menu->isConsoleRunning) == 1)
        {
+
           progressMenu(read_btns());
+          printf("menu btn processed\n");
+          usleep(1000);
 
         }
 
         while (menu->isGameSelected == 1)
         {
            progressGame(read_btns());
+           usleep(1000);
         }
     }
 
@@ -245,14 +249,30 @@ void runMenu() {
 
 int main(int argc, char** argv)
 {
+  printf("zedboy starting\n");
+
+
+
+  oledfd = oledOpen();
+
+
 
 
   char * games[]= {Tetris_Icon, Pong_Icon, Snake_Icon,Breakout_Icon};
+
+  printf("%d%d%d%d\n",LEFT,RIGHT,UP,DOWN);
+
+  printf("got icons\n");
+  menu = malloc(sizeof(ZoledGamingMainMenu));
+
   menu->optionsLogos = games;
   menu->selected = 0;
   menu->optionsSize = 4;
   menu->isConsoleRunning = 1;
   menu->isGameSelected = 0;
+
+  printf("menu init\n");
+
 
   displayMenu(menu);
 
@@ -262,14 +282,20 @@ int main(int argc, char** argv)
         // failed to setup
         return 1;
     }
+          printf("mapped switches\n");
+
 
     if (map_btns(&btnregs, BTN_GPIO_ADDR))
     {
         // failed to setup
         return 1;
     }
+       printf("mapped btns\n");
+
 
     runMenu();
 
+
+    oledClose(oledfd);
     return 0;
 }

@@ -25,7 +25,8 @@ enum Direction {
     LEFT = 1,
     RIGHT = 2,
     UP = 3,
-    DOWN = 4
+    DOWN = 4,
+    MIDDLE = 5,
 };
 
 #endif // GAME_CONSTANTS_H
