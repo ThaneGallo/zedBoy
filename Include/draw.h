@@ -6,6 +6,7 @@
 
 extern unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8] = {0};
 
+
 /* @brief draws pixel
    @param x pixel x coordinate
    @param y pixel y coordinate
@@ -37,22 +38,24 @@ void drawCircle(int centerX, int centerY, int radius);
 /* @brief prints whole buffer in console for debugging */
 void debugPrintBuffer();
 
+/* @brief draws string on OLED
+   @param str string pointer
+   @param row picks which number to write text to */
+void drawWord(char *str, int row);
+
+
 /* @brief draws characer on OLED
    @param Char character to draw
    @param origin_x origin x cooridnate
    @param origin_y origin y cordinate */
 void drawCharacter(char Character, int origin_x, int origin_y);
 
-/* @brief draws string on OLED
-   @param str string pointer
-   @param row picks which number to write text to */
-void drawWord(char *str, int row);
 
 /* @brief Sends buf to OLED char device
    @param fd file to write to
    @param buf byte buffer pointer
    @return 0 on success, < 0 on error */
-int sendBuffer(int fd, char *buf);
+int sendBuffer(int fd, unsigned char *buf);
 
 /* @brief Opens OLED char device
    @return 0 on success, < 0 on error */

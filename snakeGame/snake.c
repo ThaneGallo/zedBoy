@@ -6,20 +6,19 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include <libzed/axi_gpio.h>
-#include <libzed/zed_common.h>
-#include <libzed/zed_oled.h>
-
 #include "draw.h"
+
 
 
 #define WIDTH 128
 #define HEIGHT 32
 
+
 int i, j, gameOver;
 int x, y, fruitX, fruitY, score;
 int tailX[1024], tailY[1024];
 int nTail;
+
 enum eDirection
 {
     STOP = 0,
@@ -68,8 +67,10 @@ void setup()
     score = 0;
 }
 
-void snakeDraw(int fd)
+void drawSnake(int fd)
 {
+
+    clearScreen(fd);
 
     // draw fruit
     drawPixel(fruitX, fruitY, 1);
@@ -84,7 +85,7 @@ void snakeDraw(int fd)
     drawPixel(x, y, 1);
 
     // update display
-    sendBuffer(fd);
+    sendBuffer(fd, buf);
 }
 
 void input()
@@ -192,7 +193,7 @@ int main()
         drawSnake(fd);
         input();
         logic();
-        usleep(100000);
+        usleep(1000);
     }
     return 0;
 }
