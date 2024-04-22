@@ -11,31 +11,79 @@
 #include <time.h>
 
 // there is a snake.c file in the a lower directory called snake/snake.c, also snake.h, include snake.h
-#include "gameConstants.h"
-#include "snake/snake.h"
+#include "utils/gameConstants.h"
+#include "games/snake/snake.h"
 #include "zed_gaming_menu.h"
-#include "displayImg.h"
+#include "utils/displayImg.h"
 
+// example: LED GPIO Address
+#define SWITCH_GPIO_ADDR 0x41210000
+#define BTN_GPIO_ADDR 0x41220000 //is BUTTON ADDRESS
+
+// register offsets
+#define REG_OFFSET(REG, OFF) ((REG)+(OFF))
+#define reg_count 64
+#define reg_size sizeof(uint32_t)
+
+
+
+// game icons
 #define Tetris_Icon "./assets/tetrisGameCard.pbm"
 #define Snake_Icon "./assets/snakeGameCard.pbm"
 #define Pong_Icon "./assets/pongGameCard.pbm"
+#define Breakout_Icon "./assets/breakoutGameCard.pbm"
+
+
+//constants 
+unsigned int *switchregs;
+unsigned int *btnregs;
+ZoledGamingMainMenu *menu;
+
+
+int getNthBit(int number, int n) {
+    return (number >> n) & 0x1;
+}
+
+const int xoffsets[] = {0,32,64,96};
+int displayMenu(ZoledGamingMainMenu *menu){
+  for (size_t i = 0; i < menu->optionsSize; i++)
+  {
+    if(i == menu->selected){
+      //dotted versuion
+      printf("printing selected index : i %ld \n", i);
+      assert(fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,32,32,64)&& "Failed to display solid border logo");
+      continue;
+    }
+
+    assert(!fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,0,32,32) && "Failed to display solid border logo");
+    /* code */
+  }
+  //writes to board
+  fbFlush();
+  
+
+
+};
 
 
 
 
-
-int selectOption( ZoledGamingMainMenu *menu);
-
-int progressMenu( ZoledGamingMainMenu *menu ,int direction){
-  switch (direction) {
-        case 0:
-        //
-                isGameSelected = 1;
+int selectOption( ZoledGamingMainMenu *menu){
+              menu->isGameSelected = 1;
 
                 // gameSetups[0]();
                 games[menu->selected]();
                 // print whatevers in games[0]
                 printf('%s\n', games[menu->selected]);
+
+              return 0;
+};
+
+int progressMenu(int direction){
+  switch (direction) {
+        case 0:
+        //
+                assert(selectOption==0);
 
             break;
         case 1:
@@ -56,58 +104,39 @@ int progressMenu( ZoledGamingMainMenu *menu ,int direction){
   return 0;
 }
 
-const int xoffsets[] = {0,32,64,96};
-int displayMenu(ZoledGamingMainMenu *menu){
-  for (size_t i = 0; i < menu->optionsSize; i++)
-  {
-    if(i == menu->selected){
-      //dotted versuion
-      printf("printing selected index : i %ld \n", i);
-      assert(fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,32,32,64)&& "Failed to display solid border logo");
-      continue;
-    }
 
-    assert(!fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,0,32,32) && "Failed to display solid border logo");
-    /* code */
-  }
-  
+/// @brief chekcs for button inputs, and if a game is running sends input to game.
+/// @return 
+int progressGame(int direction){
+  // readback = *REG_OFFSET(btnregs, 0);
+            if (direction == 1) {
+                menu->isGameSelected = 0;
+                menu->isConsoleRunning = 0;
+            }
 
-
-};
-
-
-int main(){
-  ZoledGamingMainMenu menu;
-
-char *logos[] = {Tetris_Icon,Pong_Icon,Snake_Icon};
-  menu.optionsLogos = logos;
-  menu.selected = 0;
-  menu.optionsSize = 3;
-  displayMenu(&menu);
-
-  fbPrint();
-  printf("\n");
-
-
-
-  return 0;
+            gameTicks[menu->selected](direction);
+            
+            usleep(100000);
 }
 
+int read_btns(){
+            int middle = getNthBit(*REG_OFFSET(btnregs, 0), 0);
+            int down = getNthBit(*REG_OFFSET(btnregs, 0), 1);
+            int left = getNthBit(*REG_OFFSET(btnregs, 0), 2);
+            int right = getNthBit(*REG_OFFSET(btnregs, 0), 3);
+            int up = getNthBit(*REG_OFFSET(btnregs, 0), 4);
 
+            printf("Buttons: %d%d%d%d%d\n", down, left, right, up, middle);
 
+            //returns button code if the btn is pressed.
+              return left ? LEFT : 
+                        right ? RIGHT :
+                        up ? UP : 
+                        down ? DOWN : 0;
 
-// example: LED GPIO Address
-#define SWITCH_GPIO_ADDR 0x41210000
-#define BTN_GPIO_ADDR 0x41220000 //is BUTTON ADDRESS
+              
 
-// register offsets
-#define REG_OFFSET(REG, OFF) ((REG)+(OFF))
-#define reg_count 64
-#define reg_size sizeof(uint32_t)
-
-int isGameSelected = 0;
-int isConsoleRunning = 1;
-
+}
 
 
 // map GPIO peripheral; base address will be mapped to gpioregs pointer
@@ -195,62 +224,37 @@ static int map_btns(unsigned int** btnregs, unsigned int btn_addr)
   return 0;
 }
 
-int getNthBit(int number, int n) {
-    return (number >> n) & 0x1;
-}
 
-void runMenu(ZoledGamingMainMenu *menu,unsigned int *switchregs, unsigned int *btnregs) {
+void runMenu() {
 
-      while (isConsoleRunning == 1)
+      while ((menu->isConsoleRunning) == 1)
        {
-          progressMenu(menu,btnregs);
+          progressMenu(read_btns());
 
         }
 
-        while (isGameSelected == 1)
+        while (menu->isGameSelected == 1)
         {
-           progressGame(menu,btnregs);
+           progressGame(read_btns());
         }
     }
 
 
-int progressGame(ZoledGamingMainMenu *menu,unsigned int *btnregs){
-  // readback = *REG_OFFSET(btnregs, 0);
-            int middle = getNthBit(*REG_OFFSET(btnregs, 0), 0);
-            int down = getNthBit(*REG_OFFSET(btnregs, 0), 1);
-            int left = getNthBit(*REG_OFFSET(btnregs, 0), 2);
-            int right = getNthBit(*REG_OFFSET(btnregs, 0), 3);
-            int up = getNthBit(*REG_OFFSET(btnregs, 0), 4);
 
-            printf("Buttons: %d%d%d%d%d\n", down, left, right, up, middle);
-
-            if (middle == 1) {
-                isGameSelected = 0;
-                isConsoleRunning = 0;
-            }
-
-            int direction = 0;
-            if (left == 1) {
-                direction = LEFT;
-            } else if (right == 1) {
-                direction = RIGHT;
-            } else if (up == 1) {
-                direction = UP;
-            } else if (down == 1) {
-                direction = DOWN;
-            }
-
-            gameTicks[menu->selected](direction);
-            
-            usleep(100000);
-}
 
 
 int main(int argc, char** argv)
 {
-    unsigned int *switchregs;
-    unsigned int *btnregs;
-    ZoledGamingMainMenu menu;
+
+
+  char * games[]= {Tetris_Icon, Pong_Icon, Snake_Icon,Breakout_Icon};
+  menu->optionsLogos = games;
+  menu->selected = 0;
+  menu->optionsSize = 4;
+  menu->isConsoleRunning = 1;
+  menu->isGameSelected = 0;
+
+  displayMenu(menu);
 
     // try to setup Switches
     if (map_switches(&switchregs, SWITCH_GPIO_ADDR))
@@ -265,7 +269,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    runMenu(&menu,switchregs, btnregs);
+    runMenu();
 
     return 0;
 }

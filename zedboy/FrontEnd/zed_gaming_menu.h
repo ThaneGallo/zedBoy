@@ -8,6 +8,8 @@ typedef struct
   char **optionsLogos; 
   int optionsSize; // size of options in Options menu
   int selected; // current selected menu item. inciment with %=numOptions
+  int isGameSelected;
+  int isConsoleRunning;
 } ZoledGamingMainMenu;
 
 int selectOption( ZoledGamingMainMenu *menu);
