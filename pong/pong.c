@@ -6,8 +6,8 @@
 #include <time.h>
 #include "draw.h"
 
-#define WIDTH 40
-#define HEIGHT 10
+#define WIDTH 64
+#define HEIGHT 16
 
 int ballX = WIDTH / 2, ballY = HEIGHT / 2;
 int velocityX = -1, velocityY = 1;
@@ -181,6 +181,11 @@ int main()
         logic();
         draw(fd);
         usleep(1000); // Game speed
+
+        if (playerScore >= 10 || aiScore >= 10)
+        {
+            gameOver = 1;
+        }
     }
 
     oledClose(fd);
