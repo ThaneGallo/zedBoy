@@ -95,9 +95,9 @@ int check_collision(int nx, int ny)
             int y = ny + dy;
             if (currentPiece.shape[dy][dx])
             {
-                if (x >= WIDTH || y < 0 || y >= HEIGHT || (x >= 0 && board[y][x]))
+                if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT || board[y][x])
                 {
-                    return 1; // Collision detected
+                    return 1; // Collision detected, including boundary checks
                 }
             }
         }
@@ -271,15 +271,15 @@ void update()
         switch (key)
         {
         case 'a': // Move upwards
-            if (!check_collision(currentPiece.x, currentPiece.y + 1))
+            if (currentPiece.y > 0 && !check_collision(currentPiece.x, currentPiece.y - 1))
             {
-                currentPiece.y--; // Move the piece one unit upwards
+                currentPiece.y--; // Ensure the piece does not move off the upper boundary
             }
             break;
         case 'd': // Move downwards
-            if (!check_collision(currentPiece.x, currentPiece.y - 1))
-            {
-                currentPiece.y++; // Move the piece one unit downwards
+            if (currentPiece.y + 3 < HEIGHT && !check_collision(currentPiece.x, currentPiece.y + 1))
+            {                     // Adjust for the piece size
+                currentPiece.y++; // Ensure the piece does not move off the lower boundary
             }
             break;
         case ' ': // Rotate clockwise
@@ -297,8 +297,8 @@ void update()
     if (move_counter >= 1)
     { // Time-based automatic progression to the right
         move_counter = 0;
-        if (!check_collision(currentPiece.x + 1, currentPiece.y))
-        {
+        if (currentPiece.x + 3 < WIDTH && !check_collision(currentPiece.x + 1, currentPiece.y))
+        { // Adjust for the piece size
             currentPiece.x++;
         }
         else
