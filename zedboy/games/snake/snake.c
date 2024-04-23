@@ -8,13 +8,8 @@
 
 #include "../../utils/gameConstants.h"
 #include "snake.h"
-#include "draw.h"
+#include "../../utils/draw.h"
 
-
-#define WIDTH 128
-#define HEIGHT 32
-
-int snakeoledfd;
 
 SnakeGame *game;
 
@@ -57,9 +52,8 @@ int keyhit(void)
     return 0;
 }
 
-void SnakeGame_setup(int oledfd)
+void SnakeGame_setup()
 {
-    snakeoledfd = oledfd;
     game = (SnakeGame *)malloc(sizeof(SnakeGame));
     game->gameOver = 0;
     game->dir = STOP;
@@ -71,7 +65,7 @@ void SnakeGame_setup(int oledfd)
     game->nTail = 0;
 }
 
-void SnakeGame_draw(int fd)
+void SnakeGame_draw()
 {
 
     clearScreen(fd);
@@ -226,5 +220,5 @@ void SnakeGame_logic()
 void SnakeGame_tick(int direction) {
     SnakeGame_input(direction);
     SnakeGame_logic();
-    SnakeGame_draw(snakeoledfd);
+    SnakeGame_draw();
 }

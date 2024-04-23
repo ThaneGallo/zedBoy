@@ -12,12 +12,13 @@
 
 // there is a snake.c file in the a lower directory called snake/snake.c, also snake.h, include snake.h
 #include "../utils/gameConstants.h"
-#include "zed_gaming_menu.h"
+#include "zedboy.h"
 #include "../utils/displayImg.h"
 #include "../utils/draw.h"
 
 //include games 
 #include "../games/snake/snake.h"
+#include "../games/breakout/breakout.h"
 
 // example: LED GPIO Address
 #define SWITCH_GPIO_ADDR 0x41210000
@@ -38,10 +39,10 @@
 
 
 //constants 
-int oledfd;
+//int oledfd;
 unsigned int *switchregs;
 unsigned int *btnregs;
-ZoledGamingMainMenu *zedboy;
+ZoledGamingMainMenu *zedboyMainMenu;
 
 
 int getNthBit(int number, int n) {
@@ -50,51 +51,50 @@ int getNthBit(int number, int n) {
 
 const int xoffsets[] = {0,32,64,96};
 int displayMenu(ZoledGamingMainMenu *zedboy){
-  fbClear(oledfd);
-  for (size_t i = 0; i < zedboy->optionsSize; i++)
+  fbClear(fd);
+  for (size_t i = 0; i < zedboyMainMenu->optionsSize; i++)
   {
-    if(i == zedboy->selected){
+    if(i == zedboyMainMenu->selected){
       //dotted versuion
       printf("printing selected index : i %u \n", i);
-      assert(!fbDisplayPBM(zedboy->optionsLogos[i],xoffsets[i],0,0,32,32,64,1)&& "Failed to display solid border logo");
+      assert(!fbDisplayPBM(zedboyMainMenu->optionsLogos[i],xoffsets[i],0,0,32,32,64,1)&& "Failed to display solid border logo");
       continue;
     }
 
-    assert(!fbDisplayPBM(zedboy->optionsLogos[i],xoffsets[i],0,0,0,32,32,0) && "Failed to display solid border logo");
+    assert(!fbDisplayPBM(zedboyMainMenu->optionsLogos[i],xoffsets[i],0,0,0,32,32,0) && "Failed to display solid border logo");
     /* code */
   }
   //writes to board
-  fbFlush(oledfd);
-
+  fbFlush(fd);
 };
 
 
 
 
 int selectOption( ZoledGamingMainMenu *zedboy){
-               zedboy->isGameRunning = 1;
-               zedboy->isConsoleRunning=0;
+               zedboyMainMenu->isGameRunning = 1;
+               zedboyMainMenu->isConsoleRunning=0;
 
-                games[zedboy->selected](oledfd);
+                games[zedboyMainMenu->selected]();
                 // print whatevers in games[0]
-              //printf('%s\n', games[zedboy->selected]);
+              //printf('%s\n', games[zedboyMainMenu->selected]);
               return 0;
 };
 
 int progressMenu(int direction){
   switch (direction) {
         case MIDDLE:
-                selectOption(zedboy);
+                selectOption(zedboyMainMenu);
             break;
         case LEFT:
         //left
-              zedboy->selected = abs((zedboy->selected - 1) % zedboy->optionsSize);
-              displayMenu(zedboy);
+              zedboyMainMenu->selected = abs((zedboyMainMenu->selected - 1) % zedboyMainMenu->optionsSize);
+              displayMenu(zedboyMainMenu);
             break;
         case RIGHT:
         //right
-              zedboy->selected = (zedboy->selected + 1) % zedboy->optionsSize;
-              displayMenu(zedboy);
+              zedboyMainMenu->selected = (zedboyMainMenu->selected + 1) % zedboyMainMenu->optionsSize;
+              displayMenu(zedboyMainMenu);
             break;
         //case 3://UPP break;
         //case 4: //game->dir = DOWN; break;
@@ -110,11 +110,11 @@ int progressMenu(int direction){
 int progressGame(int direction){
   // readback = *REG_OFFSET(btnregs, 0);
             if (direction == -1) {
-                zedboy->isGameRunning = 0;
-                zedboy->isConsoleRunning = 1;
+                zedboyMainMenu->isGameRunning = 0;
+                zedboyMainMenu->isConsoleRunning = 1;
             }
 
-            gameTicks[zedboy->selected](direction);
+            gameTicks[zedboyMainMenu->selected](direction);
 }
 
 int read_btns(){
@@ -141,7 +141,7 @@ int read_btns(){
 // map GPIO peripheral; base address will be mapped to gpioregs pointer
 static int map_switches(unsigned int** switchregs, unsigned int switch_addr)
 {
-  int fd;
+  int swfd;
 
   if (!switchregs || !switch_addr)
     {
@@ -155,16 +155,16 @@ static int map_switches(unsigned int** switchregs, unsigned int switch_addr)
   void* addr;
   long int length_i = reg_count * reg_size;
   size_t length = (size_t) length_i;
-  fd = open("/dev/mem", O_RDWR|O_SYNC);
+  swfd = open("/dev/mem", O_RDWR|O_SYNC);
   // Check if file has opened successfully
   // If not, exit with failure
-  if(fd < 0) {
+  if(swfd < 0) {
     printf("Error opening /dev/mem! \n");
-    close(fd);
+    close(swfd);
     return -1;
   }
 
-  addr = mmap(0, length, PROT_READ, MAP_SHARED, fd, switch_addr);
+  addr = mmap(0, length, PROT_READ, MAP_SHARED, swfd, switch_addr);
   
   // Assign GPIO address and registers
   *switchregs = (unsigned int*) addr;
@@ -173,7 +173,7 @@ static int map_switches(unsigned int** switchregs, unsigned int switch_addr)
   // If not, exit with failure
   if(addr == MAP_FAILED) {
     printf("Error mapping memory! \n");
-    close(fd);
+    close(swfd);
     return -1;
   }
 
@@ -183,7 +183,7 @@ static int map_switches(unsigned int** switchregs, unsigned int switch_addr)
 
 static int map_btns(unsigned int** btnregs, unsigned int btn_addr)
 {
-  int fd;
+  int btnfd;
 
   if (!btnregs || !btn_addr)
     {
@@ -197,16 +197,16 @@ static int map_btns(unsigned int** btnregs, unsigned int btn_addr)
   void* addr;
   long int length_i = reg_count * reg_size;
   size_t length = (size_t) length_i;
-  fd = open("/dev/mem", O_RDWR|O_SYNC);
+  btnfd = open("/dev/mem", O_RDWR|O_SYNC);
   // Check if file has opened successfully
   // If not, exit with failure
-  if(fd < 0) {
+  if(btnfd < 0) {
     printf("Error opening /dev/mem! \n");
-    close(fd);
+    close(btnfd);
     return -1;
   }
 
-  addr = mmap(0, length, PROT_READ, MAP_SHARED, fd, btn_addr);
+  addr = mmap(0, length, PROT_READ, MAP_SHARED, btnfd, btn_addr);
   
   // Assign GPIO address and registers
   *btnregs = (unsigned int*) addr;
@@ -215,7 +215,7 @@ static int map_btns(unsigned int** btnregs, unsigned int btn_addr)
   // If not, exit with failure
   if(addr == MAP_FAILED) {
     printf("Error mapping memory! \n");
-    close(fd);
+    close(btnfd);
     return -1;
   }
 
@@ -223,16 +223,16 @@ static int map_btns(unsigned int** btnregs, unsigned int btn_addr)
   return 0;
 }
 
-
-void runMenu() {
+void run_zedBoy() {
       printf("attempting to run zedboy\n");
+      displayMenu(zedboyMainMenu);
 while (1)
   {
-  zedboy->isConsoleRunning = 1;
+  zedboyMainMenu->isConsoleRunning = 1;
   endGame = 0;
-  zedboy->isGameRunning = 0;
+  zedboyMainMenu->isGameRunning = 0;
 
-      while ((zedboy->isConsoleRunning) == 1)
+      while ((zedboyMainMenu->isConsoleRunning) == 1)
        {
 
           progressMenu(read_btns());
@@ -241,7 +241,7 @@ while (1)
 
         }
 
-        while (zedboy->isGameRunning == 1 && !endGame)
+        while (zedboyMainMenu->isGameRunning == 1 && !endGame)
         {
            progressGame(read_btns());
            usleep(1000);
@@ -260,28 +260,28 @@ int main(int argc, char** argv)
 
 
 
-  oledfd = oledOpen();
+  fd = oledOpen();
 
 
 
 
-  char * games[]= {Snake_Icon,Tetris_Icon, Pong_Icon,Breakout_Icon};
+  char * games[]= {Snake_Icon, Pong_Icon, Breakout_Icon, Tetris_Icon};
 
-  printf("%d%d%d%d\n",LEFT,RIGHT,UP,DOWN);
+  //printf("%d%d%d%d\n",LEFT,RIGHT,UP,DOWN);
 
-  printf("got icons\n");
-  zedboy = malloc(sizeof(ZoledGamingMainMenu));
+  //printf("got icons\n");
+  zedboyMainMenu = malloc(sizeof(ZoledGamingMainMenu));
 
-  zedboy->optionsLogos = games;
-  zedboy->selected = 0;
-  zedboy->optionsSize = 4;
-  zedboy->isConsoleRunning = 1;
-  zedboy->isGameRunning = 0;
+  zedboyMainMenu->optionsLogos = games;
+  zedboyMainMenu->selected = 0;
+  zedboyMainMenu->optionsSize = 4;
+  zedboyMainMenu->isConsoleRunning = 1;
+  zedboyMainMenu->isGameRunning = 0;
 
   printf("zedboy init\n");
 
 
-  displayMenu(zedboy);
+  //displayMenu(zedboy);
 
     // try to setup Switches
     if (map_switches(&switchregs, SWITCH_GPIO_ADDR))
@@ -300,9 +300,9 @@ int main(int argc, char** argv)
        printf("mapped btns\n");
 
 
-    runMenu();
+    run_zedBoy();
 
 
-    oledClose(oledfd);
+    oledClose(fd);
     return 0;
 }

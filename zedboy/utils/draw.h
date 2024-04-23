@@ -5,6 +5,7 @@
 #define OLED_HEIGHT 32
 
 extern unsigned char buf[];
+extern int fd;
 
 
 int clearScreen(int fd);

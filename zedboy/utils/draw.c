@@ -13,6 +13,7 @@
 #include "draw.h"
 
 unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
+int fd;
 
 /* @brief draws pixel
    @param x pixel x coordinate
@@ -917,7 +918,7 @@ int sendBuffer(int fd, unsigned char *buf)
    @return file descriptor on success, < 0 on error */
 int oledOpen()
 {
-    int fd;
+    //int fd;
 
     fd = open("/dev/zedoled1", O_WRONLY);
 

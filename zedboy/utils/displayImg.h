@@ -52,7 +52,7 @@ int fbDisplayPBM(char* path,
                       int left,
                       int bottom,
                       int right,
-                      int inverse);
+                      int inverse); 
 
 
 

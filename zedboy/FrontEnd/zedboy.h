@@ -20,10 +20,19 @@ int selectOption( ZoledGamingMainMenu *zedboy);
 /// @return 
 int NavMenu( ZoledGamingMainMenu *zedboy ,int input);
 
-/// @brief Method TO display the Menu On whatever device
+/// @brief function TO display the Menu On oled device
 /// @param zedboy current zedboy state
 /// @return 0 on success
 int displayMenu(ZoledGamingMainMenu *zedboy);
+
+
+
+// Function to progress the menu based on button inputs
+int progressMenu(int direction);
+
+// Function to progress the game based on button inputs
+int progressGame(int direction);
+
 
 
 
