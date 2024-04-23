@@ -1,22 +1,16 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <termios.h>
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/types.h>
 
+
 #include "breakout.h"
 #include "../../utils/draw.h"
 #include "../../utils/gameConstants.h"
-
-#define WIDTH 64
-#define HEIGHT 16
-#define PADDLE_WIDTH 8
-
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
-
-
 
 __attribute__((constructor))
 void registerBreakoutGame() {
@@ -25,6 +19,12 @@ void registerBreakoutGame() {
     if (game_count < MAX_GAMES) gameTicks[BREAKOUT] = Breakout_tick;
 }
 
+#define WIDTH 64
+#define HEIGHT 16
+#define PADDLE_WIDTH 8
+
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
 
 typedef struct
 {
@@ -43,17 +43,61 @@ int lives = 3;
 int ball_in_motion = 0;
 int ball_dx = 1;  // ball movement direction x (1 for right, -1 for left)
 int ball_dy = -1; // ball movement direction y (-1 for up, 1 for down)
-int waiting_for_paddle = 1;
 
+// Terminal settings for non-blocking input
+struct termios orig_termios;
 
+void reset_terminal_mode()
+{
+    tcsetattr(0, TCSANOW, &orig_termios);
+}
+
+void set_conio_terminal_mode()
+{
+    struct termios new_termios;
+    tcgetattr(0, &orig_termios);
+    new_termios = orig_termios;
+    new_termios.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(0, TCSANOW, &new_termios);
+    atexit(reset_terminal_mode);
+}
+
+int kbhit()
+{
+    struct timeval tv = {0L, 0L};
+    fd_set fds;
+    FD_SET(0, &fds);
+    return select(1, &fds, NULL, NULL, &tv);
+}
+
+int getch()
+{
+    int r;
+    unsigned char c;
+    if ((r = read(0, &c, sizeof(c))) < 0)
+    {
+        return r;
+    }
+    else
+    {
+        return c;
+    }
+}
 
 void Breakout_setup()
 {
+    num_blocks = 32;
+    score = 0;
+    lives = 3;
+    ball_in_motion = 0;
+    ball_dx = 1;  // ball movement direction x (1 for right, -1 for left)
+
     paddle.x = WIDTH / 2 - PADDLE_WIDTH / 2;
     paddle.y = HEIGHT - 2;
     paddle.width = PADDLE_WIDTH;
     paddle.height = 1;
     paddle.symbol = '=';
+
     ball.x = WIDTH / 2;
     ball.y = HEIGHT - 3;
     ball.symbol = 'O';
@@ -64,7 +108,6 @@ void Breakout_setup()
     int x_start = 2;
     int y_start = 2;
     int count = 0;
-    
     for (int y = 0; y < 4; y++)
     {
         for (int x = 0; x < 8; x++)
@@ -171,12 +214,6 @@ void Breakout_draw()
 
 void Breakout_update(int direction)
 {
-  if(!ball_in_motion && direction != MIDDLE){
-    if(lives<=0){
-        endGame = 1;
-    }
-    return;
-  }
         switch (direction)
         {
         case LEFT: // left
@@ -186,7 +223,6 @@ void Breakout_update(int direction)
             paddle.x = min(WIDTH - paddle.width, paddle.x + 2);
             break;
         case MIDDLE: // start/resume
-
             ball_in_motion = 1;
             ball_dy = -1;
             break;
@@ -236,13 +272,27 @@ void Breakout_update(int direction)
             ball_in_motion = 0;
             ball.x = WIDTH / 2;
             ball.y = HEIGHT - 3;
+            if (lives > 0)
+            {
+                printf("Press space to continue...\n");
+                while (getch() != ' ')
+                {
+                }
+            }
         }
     }
 }
 
-void Breakout_tick(int direction){
+int Breakout_tick(int direction){
+
+     if (lives > 0 && num_blocks > 0)
+    {
         Breakout_draw();
         Breakout_update(direction);
        // usleep(100000);
+        //usleep(100000);
+        return 0;
+    }
+    return score;
 
 }

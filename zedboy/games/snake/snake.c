@@ -20,51 +20,49 @@ void registerSnakeGames() {
     if (game_count < MAX_GAMES) gameTicks[SNAKE] = SnakeGame_tick;
 }
 
-int i, j, gameOver;
-int x, y, fruitX, fruitY, SnakeGame_score;
+int i, j, Snakegame_over;
+int x, y, fruitX, fruitY, Snakegame_score;
 int tailX[1024], tailY[1024];
 int nTail = 0;;
 int dir;
 
-// int keyhit(void)
-// {
-//     struct termios oldt, newt;
-//     int ch;
-//     int oldf;
+int keyhit(void)
+{
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
 
-//     tcgetattr(STDIN_FILENO, &oldt);
-//     newt = oldt;
-//     newt.c_lflag &= ~(ICANON | ECHO);
-//     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-//     oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-//     fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
 
-//     ch = getchar();
+    ch = getchar();
 
-//     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-//     fcntl(STDIN_FILENO, F_SETFL, oldf);
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
 
-//     if (ch != EOF)
-//     {
-//         ungetc(ch, stdin);
-//         return 1;
-//     }
+    if (ch != EOF)
+    {
+        ungetc(ch, stdin);
+        return 1;
+    }
 
-//     return 0;
-// }
+    return 0;
+}
 
 void SnakeGame_setup()
 {
-    game = (SnakeGame *)malloc(sizeof(SnakeGame));
-    game->gameOver = 0;
-    game->dir = STOP;
-    game->x = WIDTH / 2;
-    game->y = HEIGHT / 2;
-    game->fruitX = rand() % WIDTH;
-    game->fruitY = rand() % HEIGHT;
-    game->score = 100;
-    game->nTail = 0;
-
+    Snakegame_over = 0;
+    dir = STOP;
+    x = WIDTH / 2;
+    y = HEIGHT / 2;
+    fruitX = rand() % WIDTH;
+    fruitY = rand() % HEIGHT;
+    Snakegame_score = 0;
+    nTail = 0;
 }
 
 void SnakeGame_draw()
@@ -105,43 +103,40 @@ void SnakeGame_draw()
     sendBuffer(fd, buf);
 }
 
-// void input()
-// {
-//     if (keyhit())
-//     {
-//         switch (getchar())
-//         {
-//         case 'a':
-//             if (game->dir != RIGHT)
-//             {
-//                 game->dir = LEFT;
-//             }
-//             break;
-//         case 'd':
-//             if (game->dir != LEFT)
-//             {
-//                 game->dir = RIGHT;
-//             }
-//             break;
-//         case 'w':
-//             if (game->dir != DOWN)
-//             {
-//                 game->dir = UP;
-//             }
-//             break;
-//         case 's':
-//             if (game->dir != UP)
-//             {
-//                 game->dir = DOWN;
-//             }
-//             break;
-//         case 'x':
-//             endGame = 1;
-//             game->gameOver = 1;
-//             break;
-//         }
-//     }
-// }
+void SnakeGame_input(int direction)
+{
+        switch (direction)
+        {
+        case LEFT:
+            if (dir != RIGHT)
+            {
+                dir = LEFT;
+            }
+            break;
+        case RIGHT:
+            if (dir != LEFT)
+            {
+                dir = RIGHT;
+            }
+            break;
+        case UP:
+            if (dir != DOWN)
+            {
+                dir = UP;
+            }
+            break;
+        case DOWN:
+            if (dir != UP)
+            {
+                dir = DOWN;
+            }
+            break;
+        case -1:
+            Snakegame_over = 1;
+            break;
+        }
+    }
+
 
 void SnakeGame_logic()
 {
@@ -188,12 +183,12 @@ void SnakeGame_logic()
     for (i = 0; i < nTail; i++)
         if (tailX[i] == x && tailY[i] == y) {
             printf("endGame snake\n");
-            gameOver = 1;
+            Snakegame_over = 1;
         }
 
     if (x == fruitX && y == fruitY)
     {
-        SnakeGame_score += 10;
+        Snakegame_score += 10;
         fruitX = rand() % WIDTH;
         fruitY = rand() % HEIGHT;
         nTail++;
@@ -201,10 +196,10 @@ void SnakeGame_logic()
 }
 
 int SnakeGame_tick(int direction){
-    if(gameOver==1){
+    if(Snakegame_over==1){
         printf("returning gameover %d\n",gameOver);
-        gameOver=0;
-        return 1;
+        Snakegame_over=0;
+        return Snakegame_score;
     }
         SnakeGame_draw();
         SnakeGame_input(direction);

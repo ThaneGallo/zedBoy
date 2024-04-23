@@ -4,9 +4,10 @@
 
 // extern SnakeGame *game;
 
+//setup breakoutgameStart
 void Breakout_setup();
 void Breakout_draw();
-void Breakout_tick(int direction);
+int Breakout_tick(int direction);
 
 // GameFunction SnakeGame_setup_func = SnakeGame_setup;
 // GameFunctionTick SnakeGame_tick_func = SnakeGame_tick;
