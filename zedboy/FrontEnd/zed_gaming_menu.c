@@ -50,6 +50,7 @@ int getNthBit(int number, int n) {
 
 const int xoffsets[] = {0,32,64,96};
 int displayMenu(ZoledGamingMainMenu *menu){
+  fbClear(oledfd);
   for (size_t i = 0; i < menu->optionsSize; i++)
   {
     if(i == menu->selected){
