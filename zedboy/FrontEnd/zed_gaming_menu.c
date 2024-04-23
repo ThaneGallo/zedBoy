@@ -12,7 +12,7 @@
 
 // there is a snake.c file in the a lower directory called snake/snake.c, also snake.h, include snake.h
 #include "../utils/gameConstants.h"
-#include "zedboy.h"
+#include "zed_gaming_menu.h"
 #include "../utils/displayImg.h"
 #include "../utils/draw.h"
 
@@ -279,7 +279,7 @@ while (1)
         while (zedboyMainMenu->isGameRunning == 1)
         {
            progressGame(read_btns());
-           usleep(1000);
+           usleep(50000);
         }
 
   }

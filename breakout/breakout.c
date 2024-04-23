@@ -106,45 +106,6 @@ void setup()
     }
 }
 
-// void draw()
-// {
-//     printf("\033[H\033[J"); // clear the screen using ANSI escape codes
-//     for (int y = 0; y < HEIGHT; y++)
-//     {
-//         for (int x = 0; x < WIDTH; x++)
-//         {
-//             int print = 0;
-//             if (y == paddle.y && x >= paddle.x && x < paddle.x + paddle.width)
-//             {
-//                 printf("%c", paddle.symbol);
-//                 print = 1;
-//             }
-
-//             if (y == ball.y && x == ball.x)
-//             {
-//                 printf("%c", ball.symbol);
-//                 print = 1;
-//             }
-
-//             for (int i = 0; i < num_blocks; i++)
-//             {
-//                 if (blocks[i].active && y >= blocks[i].y && y < blocks[i].y + blocks[i].height &&
-//                     x >= blocks[i].x && x < blocks[i].x + blocks[i].width)
-//                 {
-//                     printf("%c", blocks[i].symbol);
-//                     print = 1;
-//                     break;
-//                 }
-//             }
-
-//             if (!print)
-//                 printf(" ");
-//         }
-//         printf("\n");
-//     }
-//     printf("Score: %d  Lives: %d\n", score, lives);
-// }
-
 void draw(int fd)
 {
     clearScreen(fd); // Clears the OLED buffer

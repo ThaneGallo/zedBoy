@@ -14,6 +14,7 @@
 
 __attribute__((constructor))
 void registerBreakoutGame() {
+     game_count++;
 
     if (game_count < MAX_GAMES) games[BREAKOUT] = Breakout_setup;
     if (game_count < MAX_GAMES) gameTicks[BREAKOUT] = Breakout_tick;
@@ -38,7 +39,7 @@ GameObject paddle;
 GameObject ball;
 GameObject blocks[32];
 int num_blocks = 32;
-int score = 0;
+int breakout_score = 0;
 int lives = 3;
 int ball_in_motion = 0;
 int ball_dx = 1;  // ball movement direction x (1 for right, -1 for left)
@@ -86,8 +87,12 @@ int getch()
 
 void Breakout_setup()
 {
+
+    printf("setup breakout:");
+
+
     num_blocks = 32;
-    score = 0;
+    breakout_score = 0;
     lives = 3;
     ball_in_motion = 0;
     ball_dx = 1;  // ball movement direction x (1 for right, -1 for left)
@@ -121,6 +126,8 @@ void Breakout_setup()
             count++;
         }
     }
+    Breakout_draw();
+    printf("breakout setup compl\n");
 }
 
 // void draw()
@@ -164,6 +171,7 @@ void Breakout_setup()
 
 void Breakout_draw()
 {
+    printf("drawing breakout:\n");
     clearScreen(fd); // Clears the OLED buffer
 
     // Draw paddle
@@ -179,6 +187,8 @@ void Breakout_draw()
     }
 
     // Draw ball
+        printf("Drawing ball\n");
+
     for (int dx = 0; dx < 2; dx++)
     {
         for (int dy = 0; dy < 2; dy++)
@@ -188,6 +198,7 @@ void Breakout_draw()
     }
 
     // Draw blocks
+    printf("Drawing Blocks\n");
     for (int i = 0; i < num_blocks; i++)
     {
         if (blocks[i].active)
@@ -200,7 +211,7 @@ void Breakout_draw()
                     {
                         for (int dy = 0; dy < 2; dy++)
                         {
-                            drawPixel(2 * x + dx, 2 * y + dy, 1);
+                           // drawPixel(2 * x + dx, 2 * y + dy, 1);
                         }
                     }
                 }
@@ -223,8 +234,10 @@ void Breakout_update(int direction)
             paddle.x = min(WIDTH - paddle.width, paddle.x + 2);
             break;
         case MIDDLE: // start/resume
+        if(!ball_in_motion){
             ball_in_motion = 1;
             ball_dy = -1;
+            }
             break;
         }
 
@@ -260,7 +273,7 @@ void Breakout_update(int direction)
             {
                 blocks[i].active = 0;
                 ball_dy = -ball_dy;
-                score += 10;
+                breakout_score += 10;
                 break;
             }
         }
@@ -272,13 +285,7 @@ void Breakout_update(int direction)
             ball_in_motion = 0;
             ball.x = WIDTH / 2;
             ball.y = HEIGHT - 3;
-            if (lives > 0)
-            {
-                printf("Press space to continue...\n");
-                while (getch() != ' ')
-                {
-                }
-            }
+           
         }
     }
 }
@@ -287,12 +294,13 @@ int Breakout_tick(int direction){
 
      if (lives > 0 && num_blocks > 0)
     {
-        Breakout_draw();
         Breakout_update(direction);
+        Breakout_draw();
+        
        // usleep(100000);
         //usleep(100000);
         return 0;
     }
-    return score;
+    return breakout_score;
 
 }

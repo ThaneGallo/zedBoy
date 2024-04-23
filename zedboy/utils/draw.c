@@ -30,7 +30,7 @@ int drawPixel(int x, int y, int state)
 
     if ((x > OLED_WIDTH || x < 0) || (y > OLED_HEIGHT || y < 0))
     {
-        printf("drawPixel out of bounds");
+        printf("drawPixel out of bounds( x%d,y%d)\n");
         return -1;
     }
 
