@@ -866,13 +866,9 @@ void drawCharacter(char Character, int origin_x, int origin_y)
 /* @brief draws string on OLED
    @param str string pointer
    @param row picks which number to write text to */
-void drawWord(char *str, int row)
+void drawWord(char *str, int origin_x, int origin_y)
 {
     int i = 0;
-    int origin_x = 1;
-    int origin_y = 1;
-
-    origin_y = origin_y + 4 * row;
 
     while (str[i] != '\0')
     {
@@ -880,6 +876,98 @@ void drawWord(char *str, int row)
         i++;
         origin_x += 5;
     }
+}
+
+void  showControls(int fd, int gameNum){
+    clearScreen(fd);
+    
+    switch (gameNum)
+    {
+
+    case 0: // snake
+      
+
+        sendBuffer(fd, buf);
+        break;
+
+    case 1: // pong
+    
+
+        sendBuffer(fd, buf);
+
+        break;
+
+    case 2: // breakout
+        
+
+        sendBuffer(fd, buf);
+        break;
+
+    case 3: // tetris
+      
+
+        sendBuffer(fd, buf);
+        break;
+    }
+
+    sleep(3);
+}
+
+void gameOver(int fd, int gameNum, int win, int score)
+{
+
+    clearScreen(fd);
+
+    int digits = snprintf(NULL, 0, "%d", score); // Determine the number of digits in the integer
+    char str[digits + 1];                        // Allocate just enough space for the digits and null terminator
+
+    snprintf(str, sizeof(str), "%d", score);
+
+    switch (gameNum)
+    {
+
+    case 0: // snake
+        drawWord("game over", 1, 1);
+        drawWord("score:", 1, 10);
+        drawWord(str, 28, 10);
+
+        sendBuffer(fd, buf);
+        break;
+
+    case 1: // pong
+        drawWord("game over", 1, 1);
+        drawWord(str, 28, 10);
+
+        if (win == 1)
+        {
+        }
+
+        else
+        {
+        }
+
+        sendBuffer(fd, buf);
+
+        break;
+
+    case 2: // breakout
+        drawWord("game over", 1, 1);
+        drawWord("score:", 1, 10);
+        drawWord(str, 28, 10);
+
+        sendBuffer(fd, buf);
+        break;
+
+    case 3: // tetris
+        drawWord("game over", 1, 1);
+        drawWord("score:", 1, 10);
+        drawWord(str, 28, 10);
+
+        sendBuffer(fd, buf);
+        break;
+    }
+
+    sleep(3);
 }
 
 int clearScreen(int fd)
@@ -918,7 +1006,7 @@ int sendBuffer(int fd, unsigned char *buf)
    @return file descriptor on success, < 0 on error */
 int oledOpen()
 {
-    //int fd;
+    // int fd;
 
     fd = open("/dev/zedoled1", O_WRONLY);
 
