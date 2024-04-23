@@ -69,12 +69,13 @@ void Breakout_setup()
     ball.y = HEIGHT - 3;
     ball.symbol = 'O';
 
-    int block_width = 7;
+    int block_width = 6;
     int block_height = 1;
     int padding = 1;
     int x_start = 2;
     int y_start = 2;
     int count = 0;
+    
     for (int y = 0; y < 4; y++)
     {
         for (int x = 0; x < 8; x++)
@@ -92,44 +93,6 @@ void Breakout_setup()
     printf("breakout setup compl\n");
 }
 
-// void draw()
-// {
-//     printf("\033[H\033[J"); // clear the screen using ANSI escape codes
-//     for (int y = 0; y < HEIGHT; y++)
-//     {
-//         for (int x = 0; x < WIDTH; x++)
-//         {
-//             int print = 0;
-//             if (y == paddle.y && x >= paddle.x && x < paddle.x + paddle.width)
-//             {
-//                 printf("%c", paddle.symbol);
-//                 print = 1;
-//             }
-
-//             if (y == ball.y && x == ball.x)
-//             {
-//                 printf("%c", ball.symbol);
-//                 print = 1;
-//             }
-
-//             for (int i = 0; i < num_blocks; i++)
-//             {
-//                 if (blocks[i].active && y >= blocks[i].y && y < blocks[i].y + blocks[i].height &&
-//                     x >= blocks[i].x && x < blocks[i].x + blocks[i].width)
-//                 {
-//                     printf("%c", blocks[i].symbol);
-//                     print = 1;
-//                     break;
-//                 }
-//             }
-
-//             if (!print)
-//                 printf(" ");
-//         }
-//         printf("\n");
-//     }
-//     printf("Score: %d  Lives: %d\n", score, lives);
-// }
 
 void Breakout_draw()
 {
@@ -173,8 +136,11 @@ void Breakout_draw()
                     {
                         for (int dy = 0; dy < 2; dy++)
                         {
-                           // drawPixel(2 * x + dx, 2 * y + dy, 1);
+                           drawPixel(2 * x + dx, 2 * y + dy, 1);
+                           printf("%i\n", 2* x + dx);
+                           printf("%i\n", 2*y + dy);
                         }
+
                     }
                 }
             }
