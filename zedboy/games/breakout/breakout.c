@@ -50,7 +50,6 @@ int ball_dy = -1; // ball movement direction y (-1 for up, 1 for down)
 void Breakout_setup()
 {
 
-    printf("setup breakout:");
 
 
     num_blocks = 32;
@@ -90,13 +89,11 @@ void Breakout_setup()
         }
     }
     Breakout_draw();
-    printf("breakout setup compl\n");
 }
 
 
 void Breakout_draw()
 {
-    printf("drawing breakout:\n");
     clearScreen(fd); // Clears the OLED buffer
 
     // Draw paddle
@@ -111,9 +108,6 @@ void Breakout_draw()
         }
     }
 
-    // Draw ball
-        printf("Drawing ball\n");
-
     for (int dx = 0; dx < 2; dx++)
     {
         for (int dy = 0; dy < 2; dy++)
@@ -122,8 +116,7 @@ void Breakout_draw()
         }
     }
 
-    // Draw blocks
-    printf("Drawing Blocks\n");
+
     for (int i = 0; i < num_blocks; i++)
     {
         if (blocks[i].active)
@@ -137,8 +130,7 @@ void Breakout_draw()
                         for (int dy = 0; dy < 2; dy++)
                         {
                            drawPixel(2 * x + dx, 2 * y + dy, 1);
-                           printf("%i\n", 2* x + dx);
-                           printf("%i\n", 2*y + dy);
+            
                         }
 
                     }
@@ -225,8 +217,6 @@ int Breakout_tick(int direction){
         Breakout_update(direction);
         Breakout_draw();
         
-       // usleep(100000);
-        //usleep(100000);
         return 0;
     }
     return breakout_score;
