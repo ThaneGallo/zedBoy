@@ -8,7 +8,7 @@
 
 #include "snake.h"
 #include "draw.h"
-#include "../utils/gameConstants.h"
+#include "../../utils/gameConstants.h"
 
 
 
@@ -18,11 +18,6 @@
 int snakeoledfd;
 
 SnakeGame *game;
-
-
-
-
-
 
 
 
@@ -125,6 +120,7 @@ void SnakeGame_input( int direction) {
         default:
             // if stop button is pressed, end the game (DIR = 0 = STOP)
             game->gameOver = 1;
+            endGame = 1;
             break;
     }
 }
@@ -160,6 +156,7 @@ void input()
             }
             break;
         case 'x':
+            endGame = 1;
             game->gameOver = 1;
             break;
         }
@@ -216,6 +213,7 @@ void SnakeGame_logic()
 
     if (game->x == game->fruitX && game->y == game->fruitY)
     {
+        printf("fruitcaptured\n");
         game->score += 10;
         game->fruitX = rand() % WIDTH;
         game->fruitY = rand() % HEIGHT;

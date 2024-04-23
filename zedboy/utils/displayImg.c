@@ -31,7 +31,7 @@ int read_PBMheader(FILE* fp, PBMheader* dest)
   // rewind to the beginning of the file to read the header
   rewind(fp);
   
-    fscanf(fp, "%2s", dest->format);
+    assert(fscanf(fp, "%2s", dest->format) == 1);
     if (dest->format[0] != 'P' || dest->format[1] != '1') {
         printf("Not a P1 PBM file!\n");
         exit(1);
@@ -41,7 +41,7 @@ int read_PBMheader(FILE* fp, PBMheader* dest)
 
 
     // Read width and height
-    fscanf(fp, "%d %d", &dest->width, &dest->height);
+    assert(fscanf(fp, "%d %d", &dest->width, &dest->height) == 2);
 
       printf("format: %s\n height: %d\n width: %d \n",
          dest->format,

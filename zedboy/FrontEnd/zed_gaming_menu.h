@@ -6,24 +6,24 @@
 typedef struct
 {
   char **optionsLogos; 
-  int optionsSize; // size of options in Options menu
-  int selected; // current selected menu item. inciment with %=numOptions
-  int isGameSelected;
+  int optionsSize; // size of options in Options zedboy
+  int selected; // current selected zedboy item. inciment with %=numOptions
+  int isGameRunning;
   int isConsoleRunning;
 } ZoledGamingMainMenu;
 
-int selectOption( ZoledGamingMainMenu *menu);
+int selectOption( ZoledGamingMainMenu *zedboy);
 
-/// @brief takes input and navigates menu accordinging
-/// @param menu 
+/// @brief takes input and navigates zedboy accordinging
+/// @param zedboy 
 /// @param direction 
 /// @return 
-int NavMenu( ZoledGamingMainMenu *menu ,int input);
+int NavMenu( ZoledGamingMainMenu *zedboy ,int input);
 
 /// @brief Method TO display the Menu On whatever device
-/// @param menu current menu state
+/// @param zedboy current zedboy state
 /// @return 0 on success
-int displayMenu(ZoledGamingMainMenu *menu);
+int displayMenu(ZoledGamingMainMenu *zedboy);
 
 
 

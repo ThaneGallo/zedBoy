@@ -16,6 +16,8 @@ typedef void (*GameFunctionTick)(int);
 #define MAX_GAMES 10
 extern int game_count;  // to track the number of games added
 extern int gameTick_count;  // to track the number of game ticks added
+// to tell system that game is overs
+extern int endGame; 
 
 extern GameFunction games[MAX_GAMES];
 extern GameFunctionTick gameTicks[MAX_GAMES];

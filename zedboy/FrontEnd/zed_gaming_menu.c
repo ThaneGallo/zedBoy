@@ -41,7 +41,7 @@
 int oledfd;
 unsigned int *switchregs;
 unsigned int *btnregs;
-ZoledGamingMainMenu *menu;
+ZoledGamingMainMenu *zedboy;
 
 
 int getNthBit(int number, int n) {
@@ -49,18 +49,18 @@ int getNthBit(int number, int n) {
 }
 
 const int xoffsets[] = {0,32,64,96};
-int displayMenu(ZoledGamingMainMenu *menu){
+int displayMenu(ZoledGamingMainMenu *zedboy){
   fbClear(oledfd);
-  for (size_t i = 0; i < menu->optionsSize; i++)
+  for (size_t i = 0; i < zedboy->optionsSize; i++)
   {
-    if(i == menu->selected){
+    if(i == zedboy->selected){
       //dotted versuion
       printf("printing selected index : i %u \n", i);
-      assert(!fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,32,32,64,1)&& "Failed to display solid border logo");
+      assert(!fbDisplayPBM(zedboy->optionsLogos[i],xoffsets[i],0,0,32,32,64,1)&& "Failed to display solid border logo");
       continue;
     }
 
-    assert(!fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,0,32,32,0) && "Failed to display solid border logo");
+    assert(!fbDisplayPBM(zedboy->optionsLogos[i],xoffsets[i],0,0,0,32,32,0) && "Failed to display solid border logo");
     /* code */
   }
   //writes to board
@@ -71,30 +71,30 @@ int displayMenu(ZoledGamingMainMenu *menu){
 
 
 
-int selectOption( ZoledGamingMainMenu *menu){
-               menu->isGameSelected = 1;
-               menu->isConsoleRunning=0;
+int selectOption( ZoledGamingMainMenu *zedboy){
+               zedboy->isGameRunning = 1;
+               zedboy->isConsoleRunning=0;
 
-                games[menu->selected](oledfd);
+                games[zedboy->selected](oledfd);
                 // print whatevers in games[0]
-              //printf('%s\n', games[menu->selected]);
+              //printf('%s\n', games[zedboy->selected]);
               return 0;
 };
 
 int progressMenu(int direction){
   switch (direction) {
         case MIDDLE:
-                selectOption(menu);
+                selectOption(zedboy);
             break;
         case LEFT:
         //left
-              menu->selected = abs((menu->selected - 1) % menu->optionsSize);
-              displayMenu(menu);
+              zedboy->selected = abs((zedboy->selected - 1) % zedboy->optionsSize);
+              displayMenu(zedboy);
             break;
         case RIGHT:
         //right
-              menu->selected = (menu->selected + 1) % menu->optionsSize;
-              displayMenu(menu);
+              zedboy->selected = (zedboy->selected + 1) % zedboy->optionsSize;
+              displayMenu(zedboy);
             break;
         //case 3://UPP break;
         //case 4: //game->dir = DOWN; break;
@@ -110,11 +110,11 @@ int progressMenu(int direction){
 int progressGame(int direction){
   // readback = *REG_OFFSET(btnregs, 0);
             if (direction == -1) {
-                menu->isGameSelected = 0;
-                menu->isConsoleRunning = 1;
+                zedboy->isGameRunning = 0;
+                zedboy->isConsoleRunning = 1;
             }
 
-            gameTicks[menu->selected](direction);
+            gameTicks[zedboy->selected](direction);
 }
 
 int read_btns(){
@@ -225,22 +225,29 @@ static int map_btns(unsigned int** btnregs, unsigned int btn_addr)
 
 
 void runMenu() {
-      printf("attempting to run menu\n");
+      printf("attempting to run zedboy\n");
+while (1)
+  {
+  zedboy->isConsoleRunning = 1;
+  endGame = 0;
+  zedboy->isGameRunning = 0;
 
-      while ((menu->isConsoleRunning) == 1)
+      while ((zedboy->isConsoleRunning) == 1)
        {
 
           progressMenu(read_btns());
-          printf("menu btn processed\n");
+          printf("zedboy btn processed\n");
           usleep(1000);
 
         }
 
-        while (menu->isGameSelected == 1)
+        while (zedboy->isGameRunning == 1 && !endGame)
         {
            progressGame(read_btns());
            usleep(1000);
         }
+
+  }
     }
 
 
@@ -263,18 +270,18 @@ int main(int argc, char** argv)
   printf("%d%d%d%d\n",LEFT,RIGHT,UP,DOWN);
 
   printf("got icons\n");
-  menu = malloc(sizeof(ZoledGamingMainMenu));
+  zedboy = malloc(sizeof(ZoledGamingMainMenu));
 
-  menu->optionsLogos = games;
-  menu->selected = 0;
-  menu->optionsSize = 4;
-  menu->isConsoleRunning = 1;
-  menu->isGameSelected = 0;
+  zedboy->optionsLogos = games;
+  zedboy->selected = 0;
+  zedboy->optionsSize = 4;
+  zedboy->isConsoleRunning = 1;
+  zedboy->isGameRunning = 0;
 
-  printf("menu init\n");
+  printf("zedboy init\n");
 
 
-  displayMenu(menu);
+  displayMenu(zedboy);
 
     // try to setup Switches
     if (map_switches(&switchregs, SWITCH_GPIO_ADDR))
