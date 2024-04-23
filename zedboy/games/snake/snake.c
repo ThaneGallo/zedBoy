@@ -6,25 +6,25 @@
 #include <fcntl.h>
 #include <errno.h>
 
-#include "draw.h"
+#include "../../utils/draw.h"
+#include "snake.h"
+#include"../../utils/gameConstants.h"
 
 #define WIDTH 64
 #define HEIGHT 16
 
-int i, j, gameOver;
-int x, y, fruitX, fruitY, score;
-int tailX[1024], tailY[1024];
-int nTail;
+__attribute__((constructor))
+void registerSnakeGames() {
 
-enum eDirection
-{
-    STOP = 0,
-    LEFT,
-    RIGHT,
-    UP,
-    DOWN
-};
-enum eDirection dir;
+    if (game_count < MAX_GAMES) games[SNAKE] = SnakeGame_setup;
+    if (game_count < MAX_GAMES) gameTicks[SNAKE] = SnakeGame_tick;
+}
+
+int i, j, gameOver;
+int x, y, fruitX, fruitY, SnakeGame_score;
+int tailX[1024], tailY[1024];
+int nTail = 0;;
+int dir;
 
 int keyhit(void)
 {
@@ -53,7 +53,7 @@ int keyhit(void)
     return 0;
 }
 
-void setup()
+void SnakeGame_setup()
 {
     gameOver = 0;
     dir = STOP;
@@ -61,10 +61,11 @@ void setup()
     y = HEIGHT / 2;
     fruitX = rand() % WIDTH;
     fruitY = rand() % HEIGHT;
-    score = 0;
+    SnakeGame_score = 0;
+    nTail = 0;
 }
 
-void SnakeGame_draw(int fd)
+void SnakeGame_draw()
 {
     clearScreen(fd);
 
@@ -102,44 +103,42 @@ void SnakeGame_draw(int fd)
     sendBuffer(fd, buf);
 }
 
-void input()
+void SnakeGame_input(int direction)
 {
-    if (keyhit())
-    {
-        switch (getchar())
+        switch (direction)
         {
-        case 'a':
+        case LEFT:
             if (dir != RIGHT)
             {
                 dir = LEFT;
             }
             break;
-        case 'd':
+        case RIGHT:
             if (dir != LEFT)
             {
                 dir = RIGHT;
             }
             break;
-        case 'w':
+        case UP:
             if (dir != DOWN)
             {
                 dir = UP;
             }
             break;
-        case 's':
+        case DOWN:
             if (dir != UP)
             {
                 dir = DOWN;
             }
             break;
-        case 'x':
+        case -1:
             gameOver = 1;
             break;
         }
     }
-}
 
-void logic()
+
+void SnakeGame_logic()
 {
     int prevX = tailX[0];
     int prevY = tailY[0];
@@ -182,32 +181,32 @@ void logic()
         y = HEIGHT - 1;
 
     for (i = 0; i < nTail; i++)
-        if (tailX[i] == x && tailY[i] == y)
+        if (tailX[i] == x && tailY[i] == y) {
+            printf("endGame snake\n");
             gameOver = 1;
+        }
 
     if (x == fruitX && y == fruitY)
     {
-        score += 10;
+        SnakeGame_score += 10;
         fruitX = rand() % WIDTH;
         fruitY = rand() % HEIGHT;
         nTail++;
     }
 }
 
-int main()
-{
-    int fd;
-
-    fd = oledOpen();
-
-    srand(time(0));
-    setup();
-    while (!gameOver)
-    {
-        SnakeGame_draw(fd);
-        input();
-        logic();
-        // usleep(10);
+int SnakeGame_tick(int direction){
+    if(gameOver==1){
+        printf("returning gameover %d\n",gameOver);
+        gameOver=0;
+        return 1;
     }
-    return 0;
+        SnakeGame_draw();
+        SnakeGame_input(direction);
+        SnakeGame_logic();
+
+        return 0;
+
+
+
 }
