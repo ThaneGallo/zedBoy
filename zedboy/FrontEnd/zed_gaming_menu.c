@@ -55,11 +55,11 @@ int displayMenu(ZoledGamingMainMenu *menu){
     if(i == menu->selected){
       //dotted versuion
       printf("printing selected index : i %u \n", i);
-      assert(!fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,32,32,64)&& "Failed to display solid border logo");
+      assert(!fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,32,32,64,1)&& "Failed to display solid border logo");
       continue;
     }
 
-    assert(!fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,0,32,32) && "Failed to display solid border logo");
+    assert(!fbDisplayPBM(menu->optionsLogos[i],xoffsets[i],0,0,0,32,32,0) && "Failed to display solid border logo");
     /* code */
   }
   //writes to board

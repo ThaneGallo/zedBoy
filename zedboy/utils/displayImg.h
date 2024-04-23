@@ -43,6 +43,7 @@ int parse_PBMheader( PBMheader *hdr);
    @param xledy y coordinate to place topleft corner in fb
    @param top (top,left) pixel coordinate of file to display
    @param left (top,left) pixel coordinate of file to display
+   @param inverse if >0 black and white pixels are inversed
    @return 0 if successful, < 0 otherwise */
 int fbDisplayPBM(char* path,
                       int oledx,
@@ -50,7 +51,8 @@ int fbDisplayPBM(char* path,
                       int top,
                       int left,
                       int bottom,
-                      int right);
+                      int right,
+                      int inverse);
 
 
 

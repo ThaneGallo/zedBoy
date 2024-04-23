@@ -81,7 +81,8 @@ int fbDisplayPBM(char* path,
                       int top,
                       int left,
                       int bottom,
-                      int right)
+                      int right,
+                      int inverse)
 {
   //ensure valid image bounding box
   assert( bottom - top - oledy <= OLED_HEIGHT);
@@ -159,7 +160,7 @@ int fbDisplayPBM(char* path,
     {
         for (size_t x = left; x < right; x++)
         {
-            fbPixelDraw(oledx + x_off, oledy + y_off , img_buffer[(y * hdr.width + x)]);
+            fbPixelDraw(oledx + x_off, oledy + y_off , img_buffer[(y * hdr.width + x)] ^ inverse);
             x_off++;
 
 
