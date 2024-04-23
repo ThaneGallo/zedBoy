@@ -219,6 +219,8 @@ int Breakout_tick(int direction){
         
         return 0;
     }
+    gameOver(fd, 2, NULL, breakout_score);
+    
     return breakout_score;
 
 }

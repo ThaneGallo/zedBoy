@@ -159,7 +159,6 @@ void init_piece()
     memcpy(currentPiece.shape, pieces[r].shape, sizeof(currentPiece.shape));
     if (check_collision(currentPiece.x, currentPiece.y))
     {
-        printf("\nGame Over!\n");
         exit(0);
     }
 }
@@ -282,8 +281,8 @@ void tetris_setup(){
 int tetris_tick(int direction)
 {
      if(tetrisGameover==1){
-        tetrisGameover=0;
-        return tetrisGameover;
+        gameOver(fd,3,NULL,tetrisScore);
+        return tetrisScore;
     }
         tetris_draw();
         tetris_input(direction);

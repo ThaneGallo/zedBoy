@@ -197,8 +197,7 @@ void SnakeGame_logic()
 
 int SnakeGame_tick(int direction){
     if(Snakegame_over==1){
-        printf("returning gameover %d\n",gameOver);
-        Snakegame_over=0;
+        gameOver(fd, 0, NULL, Snakegame_score);
         return Snakegame_score;
     }
         SnakeGame_draw();

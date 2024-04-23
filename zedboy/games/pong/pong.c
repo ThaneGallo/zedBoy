@@ -208,11 +208,11 @@ int pong_tick(int direction)
 
     if (playerScore >= WIN_THRESH) //win
     {
-        return 1;
+        gameOver(fd, 1, 1, NULL);
     }
     else if (aiScore >= WIN_THRESH) // lose
     {
-        return -1;
+        gameOver(fd, 1, 0, NULL);
     }
 
 
