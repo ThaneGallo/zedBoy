@@ -6,10 +6,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include "../../utils/gameConstants.h"
 #include "snake.h"
 #include "draw.h"
-#include "../../utils/gameConstants.h"
-
 
 
 #define WIDTH 128
@@ -23,6 +22,7 @@ SnakeGame *game;
 
 __attribute__((constructor))
 void registerSnakeGames() {
+
     if (game_count < MAX_GAMES) games[SNAKE] = SnakeGame_setup;
     if (game_count < MAX_GAMES) gameTicks[SNAKE] = SnakeGame_tick;
 }
@@ -209,6 +209,7 @@ void SnakeGame_logic()
 
     for (i = 0; i < game->nTail; i++)
         if (game->tailX[i] == game->x && game->tailY[i] == game->y)
+            endGame = 1;
             game->gameOver = 1;
 
     if (game->x == game->fruitX && game->y == game->fruitY)

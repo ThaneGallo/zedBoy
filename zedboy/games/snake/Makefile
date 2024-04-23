@@ -1,5 +1,5 @@
 CFLAGS = -Wall -Wextra -pedantic
-SRCS = ../../utils/draw.c snake.c
+SRCS = ../../utils/draw.c ../../utils/gameConstants.c snake.c
 OBJS = $(SRCS:.c=.o)
 TARGET = snake
 

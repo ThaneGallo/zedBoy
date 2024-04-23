@@ -14,8 +14,12 @@ typedef void (*GameFunctionTick)(int);
 
 // Declare an array of function pointers with a predefined maximum size
 #define MAX_GAMES 10
-extern int game_count;  // to track the number of games added
+
+// to track the number of games added
+extern int game_count;  
+
 extern int gameTick_count;  // to track the number of game ticks added
+
 // to tell system that game is overs
 extern int endGame; 
 
