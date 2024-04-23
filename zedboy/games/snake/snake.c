@@ -26,43 +26,45 @@ int tailX[1024], tailY[1024];
 int nTail = 0;;
 int dir;
 
-int keyhit(void)
-{
-    struct termios oldt, newt;
-    int ch;
-    int oldf;
+// int keyhit(void)
+// {
+//     struct termios oldt, newt;
+//     int ch;
+//     int oldf;
 
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+//     tcgetattr(STDIN_FILENO, &oldt);
+//     newt = oldt;
+//     newt.c_lflag &= ~(ICANON | ECHO);
+//     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+//     oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+//     fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
 
-    ch = getchar();
+//     ch = getchar();
 
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf);
+//     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+//     fcntl(STDIN_FILENO, F_SETFL, oldf);
 
-    if (ch != EOF)
-    {
-        ungetc(ch, stdin);
-        return 1;
-    }
+//     if (ch != EOF)
+//     {
+//         ungetc(ch, stdin);
+//         return 1;
+//     }
 
-    return 0;
-}
+//     return 0;
+// }
 
 void SnakeGame_setup()
 {
-    gameOver = 0;
-    dir = STOP;
-    x = WIDTH / 2;
-    y = HEIGHT / 2;
-    fruitX = rand() % WIDTH;
-    fruitY = rand() % HEIGHT;
-    SnakeGame_score = 0;
-    nTail = 0;
+    game = (SnakeGame *)malloc(sizeof(SnakeGame));
+    game->gameOver = 0;
+    game->dir = STOP;
+    game->x = WIDTH / 2;
+    game->y = HEIGHT / 2;
+    game->fruitX = rand() % WIDTH;
+    game->fruitY = rand() % HEIGHT;
+    game->score = 100;
+    game->nTail = 0;
+
 }
 
 void SnakeGame_draw()
@@ -103,40 +105,43 @@ void SnakeGame_draw()
     sendBuffer(fd, buf);
 }
 
-void SnakeGame_input(int direction)
-{
-        switch (direction)
-        {
-        case LEFT:
-            if (dir != RIGHT)
-            {
-                dir = LEFT;
-            }
-            break;
-        case RIGHT:
-            if (dir != LEFT)
-            {
-                dir = RIGHT;
-            }
-            break;
-        case UP:
-            if (dir != DOWN)
-            {
-                dir = UP;
-            }
-            break;
-        case DOWN:
-            if (dir != UP)
-            {
-                dir = DOWN;
-            }
-            break;
-        case -1:
-            gameOver = 1;
-            break;
-        }
-    }
-
+// void input()
+// {
+//     if (keyhit())
+//     {
+//         switch (getchar())
+//         {
+//         case 'a':
+//             if (game->dir != RIGHT)
+//             {
+//                 game->dir = LEFT;
+//             }
+//             break;
+//         case 'd':
+//             if (game->dir != LEFT)
+//             {
+//                 game->dir = RIGHT;
+//             }
+//             break;
+//         case 'w':
+//             if (game->dir != DOWN)
+//             {
+//                 game->dir = UP;
+//             }
+//             break;
+//         case 's':
+//             if (game->dir != UP)
+//             {
+//                 game->dir = DOWN;
+//             }
+//             break;
+//         case 'x':
+//             endGame = 1;
+//             game->gameOver = 1;
+//             break;
+//         }
+//     }
+// }
 
 void SnakeGame_logic()
 {

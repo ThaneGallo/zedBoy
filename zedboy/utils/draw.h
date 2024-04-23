@@ -14,7 +14,7 @@ int clearScreen(int fd);
    @param x pixel x coordinate
    @param y pixel y coordinate
    @param state 1 = on 0 = off */
-void drawPixel(int x, int y, int state);
+int drawPixel(int x, int y, int state);
 
 /* @brief draws line between 2 points
    @param startX start pixel x coordinate
@@ -41,10 +41,23 @@ void drawCircle(int centerX, int centerY, int radius);
 /* @brief prints whole buffer in console for debugging */
 void debugPrintBuffer();
 
+/* @brief shows controls for each game
+   @param fd oled file descriptor
+   @param gameNum game # */
+void showControls(int fd, int gameNum);
+
+/* @brief shows controls for each game
+   @param fd oled file descriptor
+   @param gameNum game #
+   @param win win or lose if applicable
+   @param score final score achieved in game if applicable*/
+void gameOver(int fd, int gameNum, int win, int score);
+
 /* @brief draws string on OLED
    @param str string pointer
-   @param row picks which number to write text to */
-void drawWord(char *str, int row);
+   @param origin_x origin x cooridnate
+   @param origin_y origin y cordinate */
+void drawWord(char *str, int origin_x, int origin_y);
 
 
 /* @brief draws characer on OLED

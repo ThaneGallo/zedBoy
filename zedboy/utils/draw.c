@@ -20,13 +20,19 @@ int fd;
    @param y pixel y coordinate
    @param state 1 = on 0 = off
    @return 0 on success, < 0 on error */
-void drawPixel(int x, int y, int state)
+int drawPixel(int x, int y, int state)
 {
     int byte_offset;
     int pgNum;
 
     // page = 1 byte
     pgNum = y / 8;
+
+    if ((x > OLED_WIDTH || x < 0) || (y > OLED_HEIGHT || y < 0))
+    {
+        printf("drawPixel out of bounds");
+        return -1;
+    }
 
     // 4 pages per column  + pg offset
     byte_offset = x * (OLED_HEIGHT / 8) + pgNum;
@@ -42,6 +48,8 @@ void drawPixel(int x, int y, int state)
         // Clear the corresponding bit in the byte
         buf[byte_offset] &= ~(1 << (y % 8)); // Clear the bit at position y % 8
     }
+
+    return 0;
 }
 
 /* @brief draws line between 2 points
@@ -209,6 +217,10 @@ void drawCharacter(char Character, int origin_x, int origin_y)
     // every Char is 4 wide and 5 tall
     switch (Character)
     {
+
+    case ' ':
+        break;
+
     case 'a':
         drawPixel(1 + origin_x, 0 + origin_y, 1);
         drawPixel(2 + origin_x, 0 + origin_y, 1);
@@ -865,14 +877,11 @@ void drawCharacter(char Character, int origin_x, int origin_y)
 
 /* @brief draws string on OLED
    @param str string pointer
-   @param row picks which number to write text to */
-void drawWord(char *str, int row)
+   @param origin_x origin x cooridnate
+   @param origin_y origin y cordinate */
+void drawWord(char *str, int origin_x, int origin_y)
 {
     int i = 0;
-    int origin_x = 1;
-    int origin_y = 1;
-
-    origin_y = origin_y + 4 * row;
 
     while (str[i] != '\0')
     {
@@ -880,6 +889,145 @@ void drawWord(char *str, int row)
         i++;
         origin_x += 5;
     }
+}
+
+/* @brief shows controls for each game
+   @param fd oled file descriptor
+   @param gameNum game # */
+void showControls(int fd, int gameNum)
+{
+    clearScreen(fd);
+
+    switch (gameNum)
+    {
+
+    case 0: // snake
+        drawWord("controls:", 1, 1);
+        drawWord("up:", 1, 10);
+        drawWord("ubtn", 15, 10);
+
+        drawWord("down:", 1, 20);
+        drawWord("dbtn", 25, 20);
+
+        drawWord("left:", OLED_WIDTH - (OLED_WIDTH / 2) + 15, 10);
+        drawWord("lbtn", OLED_WIDTH - (OLED_WIDTH / 2) + 15 + 25, 10);
+
+        drawWord("right:", OLED_WIDTH - (OLED_WIDTH / 2) + 15, 20);
+        drawWord("rbtn", OLED_WIDTH - (OLED_WIDTH / 2) + 15 + 30, 20);
+
+        sendBuffer(fd, buf);
+        break;
+
+    case 1: // pong
+        drawWord("controls:", 1, 1);
+        drawWord("up:", 1, 10);
+        drawWord("ubtn", 15, 10);
+
+        drawWord("down:", 1, 20);
+        drawWord("dbtn", 25, 20);
+
+        sendBuffer(fd, buf);
+
+        break;
+
+    case 2: // breakout
+        drawWord("controls:", 1, 1);
+        drawWord("left:", 1, 10);
+        drawWord("lbtn", 26, 10);
+
+        drawWord("right:", 1, 20);
+        drawWord("rbtn", 31, 20);
+
+        sendBuffer(fd, buf);
+        break;
+
+    case 3: // tetris
+        drawWord("controls:", 1, 1);
+        drawWord("left:", 1, 10);
+        drawWord("lbtn", 26, 10);
+
+        drawWord("right:", 50, 10);
+        drawWord("rbtn", 81, 10);
+
+        drawWord("rotate:", 1, 20);
+        drawWord("mbtn", 40, 20);
+
+        sendBuffer(fd, buf);
+        sleep(3);
+
+        clearScreen(fd);
+
+        drawWord("please turn zedboard", 1, 1);
+        drawWord("90 degrees clockwise", 1, 10);
+
+        sendBuffer(fd, buf);
+        break;
+    }
+
+    sleep(3);
+}
+
+/* @brief shows controls for each game
+   @param fd oled file descriptor
+   @param gameNum game #
+   @param win win or lose if applicable
+   @param score final score achieved in game if applicable*/
+void gameOver(int fd, int gameNum, int win, int score)
+{
+
+    clearScreen(fd);
+
+    int digits = snprintf(NULL, 0, "%d", score); // Determine the number of digits in the integer
+    char str[digits + 1];                        // Allocate just enough space for the digits and null terminator
+
+    snprintf(str, sizeof(str), "%d", score);
+
+    switch (gameNum)
+    {
+
+    case 0: // snake
+        drawWord("game over", 1, 1);
+        drawWord("score:", 1, 10);
+        drawWord(str, 32, 10);
+
+        sendBuffer(fd, buf);
+        break;
+
+    case 1: // pong
+        drawWord("game over", 1, 1);
+
+        if (win == 1)
+        {
+            drawWord("you win", 1, 10);
+        }
+
+        else
+        {
+            drawWord("you lose", 1, 10);
+        }
+
+        sendBuffer(fd, buf);
+
+        break;
+
+    case 2: // breakout
+        drawWord("game over", 1, 1);
+        drawWord("score:", 1, 10);
+        drawWord(str, 32, 10);
+
+        sendBuffer(fd, buf);
+        break;
+
+    case 3: // tetris
+        drawWord("game over", 1, 1);
+        drawWord("score:", 1, 10);
+        drawWord(str, 32, 10);
+
+        sendBuffer(fd, buf);
+        break;
+    }
+
+    sleep(3);
 }
 
 int clearScreen(int fd)
@@ -918,7 +1066,7 @@ int sendBuffer(int fd, unsigned char *buf)
    @return file descriptor on success, < 0 on error */
 int oledOpen()
 {
-    //int fd;
+    // int fd;
 
     fd = open("/dev/zedoled1", O_WRONLY);
 
