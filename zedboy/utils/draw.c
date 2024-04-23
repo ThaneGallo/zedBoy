@@ -12,7 +12,7 @@
 
 #include "draw.h"
 
-unsigned char buf[(OLED_HEIGHT * OLED_OLED_WIDTH) / 8];
+unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
 int fd;
 
 /* @brief draws pixel
