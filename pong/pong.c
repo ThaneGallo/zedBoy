@@ -4,154 +4,205 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <time.h>
+#include "draw.h"
 
-#define WIDTH 40
-#define HEIGHT 10
+#define WIDTH 32
+#define HEIGHT 16
 
 int ballX = WIDTH / 2, ballY = HEIGHT / 2;
 int velocityX = -1, velocityY = 1;
 int playerPaddleY = HEIGHT / 2;
 int AIPaddleY = HEIGHT / 2;
-int playerScore = 0; // Player's score
-int aiScore = 0; // AI score
-char field[HEIGHT][WIDTH + 1]; // +1 for null terminator
+int playerScore = 0;
+int aiScore = 0;
+int gameOver = 0;
 
-void initializeField() {
-    for (int y = 0; y < HEIGHT; y++) {
-        for (int x = 0; x < WIDTH; x++) {
-            field[y][x] = '.';
+void setup()
+{
+    srand(time(NULL));
+    playerPaddleY = HEIGHT / 2;
+    AIPaddleY = HEIGHT / 2;
+    ballX = WIDTH / 2;
+    ballY = HEIGHT / 2;
+    velocityX = -1;
+    velocityY = 1;
+    playerScore = 0;
+    aiScore = 0;
+    gameOver = 0;
+
+}
+
+int keyhit()
+{
+    struct termios oldt, newt;
+    int ch;
+    int oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+    ch = getchar();
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+    if (ch != EOF)
+    {
+        ungetc(ch, stdin);
+        return 1;
+    }
+    return 0;
+}
+
+void input()
+{
+    if (keyhit())
+    {
+        char ch = getchar();
+        switch (ch)
+        {
+        case 'w':
+            if (playerPaddleY > 0)
+                playerPaddleY--;
+            break;
+        case 's':
+            if (playerPaddleY < HEIGHT - 4)
+                playerPaddleY++;
+            break;
         }
-        field[y][WIDTH] = '\0';
     }
 }
 
-void draw() {
-    system("clear"); // Use "cls" on Windows
-    for (int y = 0; y < HEIGHT; y++) {
-        printf("%s\n", field[y]);
-    }
-    printf("\nScore: %d - %d\n", playerScore, aiScore);
-    printf("Use 'w' and 's' to move up and down\n");
-}
-
-void updateBall() {
+void logic()
+{
     ballX += velocityX;
     ballY += velocityY;
 
     // Ball collision with top or bottom
-    if (ballY <= 0 || ballY >= HEIGHT - 1) {
+    if (ballY <= 0 || ballY >= HEIGHT - 1)
+    {
         velocityY = -velocityY;
     }
 
-    // Ball collision with the paddles
-    if (ballX == 2 && (ballY >= playerPaddleY && ballY < playerPaddleY + 4)) {
+    // Ball collision with paddles
+    if (ballX == 2 && (ballY >= playerPaddleY && ballY < playerPaddleY + 4))
+    {
         velocityX = -velocityX;
-    } else if (ballX == WIDTH - 3 && (ballY >= AIPaddleY && ballY < AIPaddleY + 4)) {
+    }
+    else if (ballX == WIDTH - 3 && (ballY >= AIPaddleY && ballY < AIPaddleY + 4))
+    {
         velocityX = -velocityX;
-    } else if (ballX <= 1) {
-        // Ball is out of bounds, reset position
-        aiScore++;
+    }
+
+    // Scoring and reset
+    if (ballX <= 1 || ballX >= WIDTH - 2)
+    {
+        if (ballX <= 1)
+            aiScore++;
+        else
+            playerScore++;
+
         ballX = WIDTH / 2;
         ballY = HEIGHT / 2;
-        velocityX = -velocityX; // Send ball in opposite direction
-    } else if (ballX >= WIDTH - 2) {
-        // Player scores if the ball gets past the AI paddle
-        playerScore++;
-        ballX = WIDTH / 2; ballY = HEIGHT / 2; // Reset ball position
-        velocityX = -velocityX; // Send ball in opposite direction
+        velocityX = -velocityX;
     }
-}
 
-void moveAI() {
-    if (AIPaddleY < ballY - 1) {
+    // AI movement
+    if (AIPaddleY < ballY - 1)
+    {
         AIPaddleY++;
-    } else if (AIPaddleY > ballY + 1) {
+    }
+    else if (AIPaddleY > ballY + 1)
+    {
         AIPaddleY--;
     }
 
     // Prevent the AI paddle from moving out of bounds
-    if (AIPaddleY < 0) {
+    if (AIPaddleY < 0)
+    {
         AIPaddleY = 0;
-    } else if (AIPaddleY > HEIGHT - 4) {
+    }
+    else if (AIPaddleY > HEIGHT - 4)
+    {
         AIPaddleY = HEIGHT - 4;
     }
 }
 
-void placeEntities() {
-    initializeField();
-    // Place player paddle
-    for (int i = 0; i < 4; ++i) {
-        field[playerPaddleY + i][1] = '|';
-    }
-    // Place AI paddle
-    for (int i = 0; i < 4; ++i) {
-        field[AIPaddleY + i][WIDTH - 2] = '|';
-    }
-    // Place ball
-    field[ballY][ballX] = 'O';
-}
+void draw(int fd)
+{
+    clearScreen(fd);
 
-int keyhit(void) {
-    struct termios oldt, newt;
-    int ch;
-    int oldf;
+    char playerScoreChar = (char)playerScore;
+    char aiScoreChar = (char)aiScore;
 
-    // Save old terminal settings
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
+    drawLine(WIDTH*2 + 2, 0, WIDTH*2 + 2, 32, 1);
 
-    // Disable buffering and echo
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    drawLine(WIDTH*2 + 2, 8, OLED_WIDTH, 8, 1);
+    drawLine(WIDTH*2 + 2, 0, ((WIDTH*2 + 2) + OLED_WIDTH) / 2, 32, 1); 
 
-    // Set non-blocking mode
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
 
-    // Check for input
-    ch = getchar();
+    // drawWord("score:", 0);
+    // drawWord(playerScore,0);
+    // drawWord(aiScore,0);
+    
 
-    // Restore terminal settings
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-    if (ch != EOF) {
-        ungetc(ch, stdin);
-        return 1;
-    }
-
-    return 0;
-}
-
-void input() {
-    if (keyhit()) {
-        char ch = getchar();
-        switch (ch) {
-            case 'w':
-                if (playerPaddleY > 0) playerPaddleY--;
-                break;
-            case 's':
-                if (playerPaddleY < HEIGHT - 4) playerPaddleY++;
-                break;
+    // Draw player paddle as a 2x2 block for each unit
+    for (int i = 0; i < 4; ++i)
+    {
+        for (int dx = 0; dx < 2; dx++)
+        {
+            for (int dy = 0; dy < 2; dy++)
+            {
+                drawPixel(2 * 1 + dx, 2 * (playerPaddleY + i) + dy, 1);
+            }
         }
     }
-}
 
-int main() {
-    // Game setup
-    srand(time(NULL));
-    initializeField();
-    placeEntities();
-
-    // Main game loop
-    while (1) {
-        placeEntities();
-        draw();
-        input();
-        updateBall();
-        moveAI();
-        usleep(100000); // Sleep for 0.1 seconds to slow down the game loop
+    // Draw AI paddle as a 2x2 block for each unit
+    for (int i = 0; i < 4; ++i)
+    {
+        for (int dx = 0; dx < 2; dx++)
+        {
+            for (int dy = 0; dy < 2; dy++)
+            {
+                drawPixel(2 * (WIDTH - 2) + dx, 2 * (AIPaddleY + i) + dy, 1);
+            }
+        }
     }
 
+    // Draw ball as a 2x2 block
+    for (int dx = 0; dx < 2; dx++)
+    {
+        for (int dy = 0; dy < 2; dy++)
+        {
+            drawPixel(2 * ballX + dx, 2 * ballY + dy, 1);
+        }
+    }
+
+    // Update display
+    sendBuffer(fd, buf);
+}
+
+int main()
+{
+    int fd = oledOpen();
+    setup();
+    while (!gameOver)
+    {
+        input();
+        logic();
+        draw(fd);
+        usleep(1000); // Game speed
+
+        if (playerScore >= 10 || aiScore >= 10)
+        {
+            gameOver = 1;
+        }
+    }
+
+    oledClose(fd);
     return 0;
 }

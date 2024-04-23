@@ -5,10 +5,11 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <draw.h>
 
-#define WIDTH 128
-#define HEIGHT 32
+#include "draw.h"
+
+#define WIDTH 64
+#define HEIGHT 16
 #define PADDLE_WIDTH 8
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
@@ -84,7 +85,7 @@ void setup()
     ball.y = HEIGHT - 3;
     ball.symbol = 'O';
 
-    int block_width = 6;
+    int block_width = 7;
     int block_height = 1;
     int padding = 1;
     int x_start = 2;

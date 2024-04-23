@@ -8,8 +8,12 @@
 #include <string.h>
 #include <time.h>
 
-#define WIDTH 8
-#define HEIGHT 32
+#include "draw.h"
+
+#define WIDTH 32
+#define HEIGHT 8
+
+int board[HEIGHT][WIDTH] = {0};
 
 int score = 0;
 
@@ -20,7 +24,6 @@ typedef struct
 } Tetromino;
 
 Tetromino currentPiece, pieces[7];
-int board[HEIGHT][WIDTH] = {0};
 struct termios orig_termios;
 
 void reset_terminal_mode()
@@ -60,42 +63,53 @@ int getch()
     }
 }
 
-void rotate_piece(int clockwise)
+void rotate_piece()
 {
     int temp[4][4];
+    memset(temp, 0, sizeof(temp));
+
+    // Store the current shape in a temporary array rotated clockwise
     for (int y = 0; y < 4; y++)
     {
         for (int x = 0; x < 4; x++)
         {
-            if (clockwise)
-            {
-                temp[x][3 - y] = currentPiece.shape[y][x];
-            }
-            else
-            {
-                temp[3 - x][y] = currentPiece.shape[y][x];
-            }
+            temp[x][3 - y] = currentPiece.shape[y][x];
         }
     }
+
+    // Save the old shape in case we need to revert
+    int old_shape[4][4];
+    memcpy(old_shape, currentPiece.shape, sizeof(currentPiece.shape));
+
+    // Apply the rotated shape to the current piece
     memcpy(currentPiece.shape, temp, sizeof(currentPiece.shape));
+
+    // Check for collision with the new shape
+    if (check_collision(currentPiece.x, currentPiece.y))
+    {
+        // Revert to old shape if there is a collision
+        memcpy(currentPiece.shape, old_shape, sizeof(currentPiece.shape));
+    }
 }
 
-int check_collision(int x, int y)
+int check_collision(int nx, int ny)
 {
     for (int dy = 0; dy < 4; dy++)
     {
         for (int dx = 0; dx < 4; dx++)
         {
-            int nx = x + dx;
-            int ny = y + dy;
             if (currentPiece.shape[dy][dx])
-            {
-                if (nx < 0 || nx >= WIDTH || ny >= HEIGHT || (ny >= 0 && board[ny][nx]))
-                    return 1; // collision
+            { // Check only occupied parts of the Tetromino
+                int x = nx + dx;
+                int y = ny + dy;
+                if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT || board[y][x])
+                {
+                    return 1; // Collision detected
+                }
             }
         }
     }
-    return 0; // no collision
+    return 0; // No collision
 }
 
 void merge_piece()
@@ -104,7 +118,7 @@ void merge_piece()
     {
         for (int dx = 0; dx < 4; dx++)
         {
-            if (currentPiece.shape[dy][dx] && currentPiece.y + dy >= 0)
+            if (currentPiece.shape[dy][dx] && (currentPiece.x + dx < WIDTH))
             {
                 board[currentPiece.y + dy][currentPiece.x + dx] = 1;
             }
@@ -114,10 +128,10 @@ void merge_piece()
 
 void clear_lines()
 {
-    for (int y = HEIGHT - 1; y >= 0; y--)
+    for (int x = WIDTH - 1; x >= 0; x--)
     {
         int complete = 1;
-        for (int x = 0; x < WIDTH; x++)
+        for (int y = 0; y < HEIGHT; y++)
         {
             if (!board[y][x])
             {
@@ -128,16 +142,18 @@ void clear_lines()
         if (complete)
         {
             score += 10;
-
-            for (int ty = y; ty > 0; ty--)
+            for (int tx = x; tx > 0; tx--)
             {
-                for (int x = 0; x < WIDTH; x++)
+                for (int y = 0; y < HEIGHT; y++)
                 {
-                    board[ty][x] = board[ty - 1][x];
+                    board[y][tx] = board[y][tx - 1];
                 }
             }
-            memset(board[0], 0, sizeof(board[0]));
-            y++;
+            for (int y = 0; y < HEIGHT; y++)
+            {
+                board[y][0] = 0;
+            }
+            x++; // Since we are clearing this column, check it again in case the above line filled it
         }
     }
 }
@@ -162,9 +178,8 @@ void init_pieces()
 
 void init_piece()
 {
-    currentPiece.x = WIDTH / 2 - 2;
-    currentPiece.y = 0;
-    // random shape for the new piece
+    currentPiece.x = 0;              // Start from the far left of the board
+    currentPiece.y = HEIGHT / 2 - 2; // Vertically centered
     int r = rand() % 7;
     memcpy(currentPiece.shape, pieces[r].shape, sizeof(currentPiece.shape));
     if (check_collision(currentPiece.x, currentPiece.y))
@@ -174,40 +189,85 @@ void init_piece()
     }
 }
 
-void draw()
+// void draw()
+// {
+//     printf("\033[H\033[J");
+//     for (int y = 0; y < HEIGHT; y++)
+//     {
+//         for (int x = 0; x < WIDTH; x++)
+//         {
+//             if (board[y][x])
+//             {
+//                 printf("X");
+//             }
+//             else
+//             {
+//                 int printed = 0;
+//                 for (int dy = 0; dy < 4; dy++)
+//                 {
+//                     for (int dx = 0; dx < 4; dx++)
+//                     {
+//                         if (currentPiece.shape[dy][dx] && y == currentPiece.y + dy && x == currentPiece.x + dx)
+//                         {
+//                             printf("X");
+//                             printed = 1;
+//                             break;
+//                         }
+//                     }
+//                     if (printed)
+//                         break;
+//                 }
+//                 if (!printed)
+//                     printf(" ");
+//             }
+//         }
+//         printf("\n");
+//     }
+// }
+
+void draw(int fd)
 {
-    printf("\033[H\033[J");
-    for (int y = 0; y < HEIGHT; y++)
+    clearScreen(fd);
+    for (int x = 0; x < WIDTH; x++)
     {
-        for (int x = 0; x < WIDTH; x++)
+        for (int y = 0; y < HEIGHT; y++)
         {
+            int pieceOccupied = 0;
             if (board[y][x])
             {
-                printf("X");
+                for (int dx = 0; dx < 4; dx++)
+                {
+                    for (int dy = 0; dy < 4; dy++)
+                    {
+                        drawPixel(4 * x + dx, 4 * y + dy, 1);
+                    }
+                }
             }
-            else
+            for (int dy = 0; dy < 4; dy++)
             {
-                int printed = 0;
-                for (int dy = 0; dy < 4; dy++)
+                for (int dx = 0; dx < 4; dx++)
+                {
+                    if (currentPiece.shape[dy][dx] && x == currentPiece.x + dx && y == currentPiece.y + dy)
+                    {
+                        pieceOccupied = 1;
+                        break;
+                    }
+                }
+                if (pieceOccupied)
                 {
                     for (int dx = 0; dx < 4; dx++)
                     {
-                        if (currentPiece.shape[dy][dx] && y == currentPiece.y + dy && x == currentPiece.x + dx)
+                        for (int dy = 0; dy < 4; dy++)
                         {
-                            printf("X");
-                            printed = 1;
-                            break;
+                            drawPixel(4 * x + dx, 4 * y + dy, 1); // Draw each block as a 4x4 pixel block
                         }
                     }
-                    if (printed)
-                        break;
+                    break;
                 }
-                if (!printed)
-                    printf(" ");
             }
         }
-        printf("\n");
     }
+    sendBuffer(fd, buf);
 }
 
 void update()
@@ -217,30 +277,33 @@ void update()
         char key = getch();
         switch (key)
         {
-        case 'a': // left
-            if (!check_collision(currentPiece.x - 1, currentPiece.y))
-                currentPiece.x--;
+        case 'a': // Move left
+            if (currentPiece.y > 0 && !check_collision(currentPiece.x, currentPiece.y + 1))
+            {
+                currentPiece.y++; // Move the piece one unit to the left if no collision and within bounds
+            }
             break;
-        case 'd': // right
-            if (!check_collision(currentPiece.x + 1, currentPiece.y))
-                currentPiece.x++;
+        case 'd': // Move right
+            if (currentPiece.y + getMaxWidth(currentPiece.shape) - 1 < HEIGHT - 1 && !check_collision(currentPiece.x, currentPiece.y - 1))
+            {
+                currentPiece.y--; // Move the piece one unit to the right if no collision and within bounds
+            }
             break;
-        case ' ': // rotate
-            rotate_piece(1);
-            if (check_collision(currentPiece.x, currentPiece.y))
-                rotate_piece(0); // undo rotation if it results in a collision
+        case ' ': // Rotate clockwise
+            rotate_piece();
             break;
         }
     }
 
-    static int drop_counter = 0;
-    drop_counter++;
-    if (drop_counter >= 10)
+    // Automatic progression to the right every cycle
+    static int move_counter = 0;
+    move_counter++;
+    if (move_counter >= 1)
     {
-        drop_counter = 0;
-        if (!check_collision(currentPiece.x, currentPiece.y + 1))
+        move_counter = 0;
+        if (currentPiece.x + 3 < WIDTH && !check_collision(currentPiece.x + 1, currentPiece.y))
         {
-            currentPiece.y++;
+            currentPiece.x++; // Move the piece one unit to the right
         }
         else
         {
@@ -251,6 +314,23 @@ void update()
     }
 }
 
+// Utility to get the maximum width of the current tetromino to manage boundaries
+int getMaxWidth(int shape[4][4])
+{
+    int maxWidth = 0;
+    for (int y = 0; y < 4; y++)
+    {
+        for (int x = 0; x < 4; x++)
+        {
+            if (shape[y][x] && y + 1 > maxWidth)
+            {
+                maxWidth = y + 1;
+            }
+        }
+    }
+    return maxWidth;
+}
+
 int main()
 {
     srand(time(NULL));
@@ -258,15 +338,16 @@ int main()
     init_pieces();
     init_piece();
 
+    int fd = oledOpen();
+
     while (1)
     {
-        draw();
+        draw(fd);
         update();
-        usleep(50000);
+        usleep(5000);
     }
 
-    printf("Game Over! Your score is: ");
-    printf(score);
-
+    oledClose(fd);
+    printf("Game Over! Your score is: %d\n", score);
     return 0;
 }
