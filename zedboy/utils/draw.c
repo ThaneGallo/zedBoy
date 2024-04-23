@@ -12,7 +12,7 @@
 
 #include "draw.h"
 
-unsigned char buf[(OLED_HEIGHT * OLED_WIDTH) / 8];
+unsigned char buf[(OLED_HEIGHT * OLED_OLED_WIDTH) / 8];
 int fd;
 
 /* @brief draws pixel
@@ -865,7 +865,8 @@ void drawCharacter(char Character, int origin_x, int origin_y)
 
 /* @brief draws string on OLED
    @param str string pointer
-   @param row picks which number to write text to */
+   @param origin_x origin x cooridnate
+   @param origin_y origin y cordinate */
 void drawWord(char *str, int origin_x, int origin_y)
 {
     int i = 0;
@@ -878,33 +879,66 @@ void drawWord(char *str, int origin_x, int origin_y)
     }
 }
 
-void  showControls(int fd, int gameNum){
+/* @brief shows controls for each game
+   @param fd oled file descriptor
+   @param gameNum game # */
+void showControls(int fd, int gameNum)
+{
     clearScreen(fd);
-    
+
     switch (gameNum)
     {
 
     case 0: // snake
-      
+        drawWord("controls:", 1, 1);
+        drawWord("up:", 1, 10);
+        drawWord("ubtn", 15, 10);
+
+        drawWord("down:", 1, 20);
+        drawWord("dbtn", 25, 20);
+
+        drawWord("left:", (OLED_WIDTH / 2) + 30, 10);
+        drawWord("lbtn", (OLED_WIDTH / 2) + 30 + 25, 10);
+
+        drawWord("right:", OLED_WIDTH - (OLED_WIDTH / 2) + 30, 20);
+        drawWord("rbtn", OLED_WIDTH - (OLED_WIDTH / 2) + 30 + 30, 20);
 
         sendBuffer(fd, buf);
         break;
 
     case 1: // pong
-    
+        drawWord("controls:", 1, 1);
+        drawWord("left:", 1, 10);
+        drawWord("lbtn", 26, 10);
+
+        drawWord("right:", 1, 20);
+        drawWord("rbtn", 31, 20);
 
         sendBuffer(fd, buf);
 
         break;
 
     case 2: // breakout
-        
+        drawWord("controls:", 1, 1);
+        drawWord("left:", 1, 10);
+        drawWord("lbtn", 26, 10);
+
+        drawWord("right:", 1, 20);
+        drawWord("rbtn", 31, 20);
 
         sendBuffer(fd, buf);
         break;
 
     case 3: // tetris
-      
+        drawWord("controls:", 1, 1);
+        drawWord("left:", 1, 10);
+        drawWord("lbtn", 26, 10);
+
+        drawWord("right:", 40, 10);
+        drawWord("rbtn", 71, 10);
+
+        drawWord("rotate:", 1, 20);
+        drawWord("mbtn", 47, 20);
 
         sendBuffer(fd, buf);
         break;
@@ -913,6 +947,11 @@ void  showControls(int fd, int gameNum){
     sleep(3);
 }
 
+/* @brief shows controls for each game
+   @param fd oled file descriptor
+   @param gameNum game #
+   @param win win or lose if applicable
+   @param score final score achieved in game if applicable*/
 void gameOver(int fd, int gameNum, int win, int score)
 {
 
@@ -936,14 +975,16 @@ void gameOver(int fd, int gameNum, int win, int score)
 
     case 1: // pong
         drawWord("game over", 1, 1);
-        drawWord(str, 28, 10);
+
 
         if (win == 1)
         {
+        drawWord("you win", 1, 10);
         }
 
         else
         {
+        drawWord("you lose", 1, 10);
         }
 
         sendBuffer(fd, buf);
@@ -989,10 +1030,10 @@ int sendBuffer(int fd, unsigned char *buf)
 {
     int i;
 
-    for (i = 0; i < ((OLED_HEIGHT * OLED_WIDTH) / 8); i++)
+    for (i = 0; i < ((OLED_HEIGHT * OLED_OLED_WIDTH) / 8); i++)
     {
 
-        if (write(fd, buf, (OLED_HEIGHT * OLED_WIDTH) / 8) < 0)
+        if (write(fd, buf, (OLED_HEIGHT * OLED_OLED_WIDTH) / 8) < 0)
         {
             printf("Write to Char device failed\n");
             return -1;
