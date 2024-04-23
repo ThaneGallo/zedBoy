@@ -14,7 +14,7 @@ int clearScreen(int fd);
    @param x pixel x coordinate
    @param y pixel y coordinate
    @param state 1 = on 0 = off */
-void drawPixel(int x, int y, int state);
+int drawPixel(int x, int y, int state);
 
 /* @brief draws line between 2 points
    @param startX start pixel x coordinate

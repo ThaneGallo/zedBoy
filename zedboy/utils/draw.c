@@ -217,6 +217,10 @@ void drawCharacter(char Character, int origin_x, int origin_y)
     // every Char is 4 wide and 5 tall
     switch (Character)
     {
+
+    case ' ':
+        break;
+
     case 'a':
         drawPixel(1 + origin_x, 0 + origin_y, 1);
         drawPixel(2 + origin_x, 0 + origin_y, 1);
@@ -905,22 +909,22 @@ void showControls(int fd, int gameNum)
         drawWord("down:", 1, 20);
         drawWord("dbtn", 25, 20);
 
-        drawWord("left:", (OLED_WIDTH / 2) + 30, 10);
-        drawWord("lbtn", (OLED_WIDTH / 2) + 30 + 25, 10);
+        drawWord("left:", OLED_WIDTH - (OLED_WIDTH / 2) + 15, 10);
+        drawWord("lbtn", OLED_WIDTH - (OLED_WIDTH / 2) + 15 + 25, 10);
 
-        drawWord("right:", OLED_WIDTH - (OLED_WIDTH / 2) + 30, 20);
-        drawWord("rbtn", OLED_WIDTH - (OLED_WIDTH / 2) + 30 + 30, 20);
+        drawWord("right:", OLED_WIDTH - (OLED_WIDTH / 2) + 15, 20);
+        drawWord("rbtn", OLED_WIDTH - (OLED_WIDTH / 2) + 15 + 30, 20);
 
         sendBuffer(fd, buf);
         break;
 
     case 1: // pong
         drawWord("controls:", 1, 1);
-        drawWord("left:", 1, 10);
-        drawWord("lbtn", 26, 10);
+        drawWord("up:", 1, 10);
+        drawWord("ubtn", 15, 10);
 
-        drawWord("right:", 1, 20);
-        drawWord("rbtn", 31, 20);
+        drawWord("down:", 1, 20);
+        drawWord("dbtn", 25, 20);
 
         sendBuffer(fd, buf);
 
@@ -942,11 +946,19 @@ void showControls(int fd, int gameNum)
         drawWord("left:", 1, 10);
         drawWord("lbtn", 26, 10);
 
-        drawWord("right:", 40, 10);
-        drawWord("rbtn", 71, 10);
+        drawWord("right:", 50, 10);
+        drawWord("rbtn", 81, 10);
 
         drawWord("rotate:", 1, 20);
-        drawWord("mbtn", 47, 20);
+        drawWord("mbtn", 40, 20);
+
+        sendBuffer(fd, buf);
+        sleep(3);
+
+        clearScreen(fd);
+
+        drawWord("please turn zedboard", 1, 1);
+        drawWord("90 degrees clockwise", 1, 10);
 
         sendBuffer(fd, buf);
         break;
@@ -976,7 +988,7 @@ void gameOver(int fd, int gameNum, int win, int score)
     case 0: // snake
         drawWord("game over", 1, 1);
         drawWord("score:", 1, 10);
-        drawWord(str, 28, 10);
+        drawWord(str, 32, 10);
 
         sendBuffer(fd, buf);
         break;
@@ -1001,7 +1013,7 @@ void gameOver(int fd, int gameNum, int win, int score)
     case 2: // breakout
         drawWord("game over", 1, 1);
         drawWord("score:", 1, 10);
-        drawWord(str, 28, 10);
+        drawWord(str, 32, 10);
 
         sendBuffer(fd, buf);
         break;
@@ -1009,7 +1021,7 @@ void gameOver(int fd, int gameNum, int win, int score)
     case 3: // tetris
         drawWord("game over", 1, 1);
         drawWord("score:", 1, 10);
-        drawWord(str, 28, 10);
+        drawWord(str, 32, 10);
 
         sendBuffer(fd, buf);
         break;
@@ -1037,10 +1049,10 @@ int sendBuffer(int fd, unsigned char *buf)
 {
     int i;
 
-    for (i = 0; i < ((OLED_HEIGHT * OLED_OLED_WIDTH) / 8); i++)
+    for (i = 0; i < ((OLED_HEIGHT * OLED_WIDTH) / 8); i++)
     {
 
-        if (write(fd, buf, (OLED_HEIGHT * OLED_OLED_WIDTH) / 8) < 0)
+        if (write(fd, buf, (OLED_HEIGHT * OLED_WIDTH) / 8) < 0)
         {
             printf("Write to Char device failed\n");
             return -1;
