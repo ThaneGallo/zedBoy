@@ -20,13 +20,19 @@ int fd;
    @param y pixel y coordinate
    @param state 1 = on 0 = off
    @return 0 on success, < 0 on error */
-void drawPixel(int x, int y, int state)
+int drawPixel(int x, int y, int state)
 {
     int byte_offset;
     int pgNum;
 
     // page = 1 byte
     pgNum = y / 8;
+
+    if ((x > OLED_WIDTH || x < 0) || (y > OLED_HEIGHT || y < 0))
+    {
+        printf("drawPixel out of bounds");
+        return -1;
+    }
 
     // 4 pages per column  + pg offset
     byte_offset = x * (OLED_HEIGHT / 8) + pgNum;
@@ -42,6 +48,8 @@ void drawPixel(int x, int y, int state)
         // Clear the corresponding bit in the byte
         buf[byte_offset] &= ~(1 << (y % 8)); // Clear the bit at position y % 8
     }
+
+    return 0;
 }
 
 /* @brief draws line between 2 points
@@ -976,15 +984,14 @@ void gameOver(int fd, int gameNum, int win, int score)
     case 1: // pong
         drawWord("game over", 1, 1);
 
-
         if (win == 1)
         {
-        drawWord("you win", 1, 10);
+            drawWord("you win", 1, 10);
         }
 
         else
         {
-        drawWord("you lose", 1, 10);
+            drawWord("you lose", 1, 10);
         }
 
         sendBuffer(fd, buf);
