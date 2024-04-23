@@ -7,7 +7,7 @@
 // #define INITIAL_SPEED 5
 
 typedef void (*GameFunction)();
-typedef void (*GameFunctionTick)(int);
+typedef int (*GameFunctionTick)(int);
 
 // GameFunction gameSetups[9];
 // GameFunctionTick gameTicks[9];

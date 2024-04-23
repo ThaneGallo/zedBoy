@@ -20,6 +20,7 @@
 #include "../games/snake/snake.h"
 #include "../games/breakout/breakout.h"
 
+#define EXIT_GAME_SIG -4
 // example: LED GPIO Address
 #define SWITCH_GPIO_ADDR 0x41210000
 #define BTN_GPIO_ADDR 0x41220000 //is BUTTON ADDRESS
@@ -72,10 +73,16 @@ int displayMenu(ZoledGamingMainMenu *zedboy){
 
 
 int selectOption( ZoledGamingMainMenu *zedboy){
+              printf("printing selected index : i %u \n", zedboy->selected);
+
                zedboyMainMenu->isGameRunning = 1;
-               zedboyMainMenu->isConsoleRunning=0;
+               zedboyMainMenu->isConsoleRunning = 0;
+
 
                 games[zedboyMainMenu->selected]();
+
+                printf("GAME SETUP: i %u \n", zedboy->selected);
+
                 // print whatevers in games[0]
               //printf('%s\n', games[zedboyMainMenu->selected]);
               return 0;
@@ -84,15 +91,20 @@ int selectOption( ZoledGamingMainMenu *zedboy){
 int progressMenu(int direction){
   switch (direction) {
         case MIDDLE:
+                printf("MIDDLE PRESSED\n");
                 selectOption(zedboyMainMenu);
             break;
         case LEFT:
         //left
+                              printf("LEFT PRESSED\n");
+
               zedboyMainMenu->selected = abs((zedboyMainMenu->selected - 1) % zedboyMainMenu->optionsSize);
               displayMenu(zedboyMainMenu);
             break;
         case RIGHT:
         //right
+              printf("RIGHT PRESSED\n");
+
               zedboyMainMenu->selected = (zedboyMainMenu->selected + 1) % zedboyMainMenu->optionsSize;
               displayMenu(zedboyMainMenu);
             break;
@@ -109,22 +121,42 @@ int progressMenu(int direction){
 /// @return 
 int progressGame(int direction){
   // readback = *REG_OFFSET(btnregs, 0);
-            if (direction == -1) {
-                zedboyMainMenu->isGameRunning = 0;
-                zedboyMainMenu->isConsoleRunning = 1;
-            }
+           /*  if (read_sw() == 1) {
+            } */
 
-            gameTicks[zedboyMainMenu->selected](direction);
+        int gameOver = gameTicks[zedboyMainMenu->selected](direction);
+
+
+        if(gameOver){
+          printf("gameOVer\n");
+
+              zedboyMainMenu->isGameRunning = 0;
+              zedboyMainMenu->isConsoleRunning = 1;
+
+        };
+}
+
+int read_sw(){
+     uint8_t sw = (*REG_OFFSET(switchregs, 0), 0);
+            
+
+           // printf("Switches: %d \n", sw);
+
+            return sw;
+
+
+
 }
 
 int read_btns(){
-            int middle = getNthBit(*REG_OFFSET(btnregs, 0), 0);
-            int down = getNthBit(*REG_OFFSET(btnregs, 0), 1);
-            int left = getNthBit(*REG_OFFSET(btnregs, 0), 2);
-            int right = getNthBit(*REG_OFFSET(btnregs, 0), 3);
-            int up = getNthBit(*REG_OFFSET(btnregs, 0), 4);
+            int middle = getNthBit(*(volatile unsigned int*)
+REG_OFFSET(btnregs, 0), 0);
+            int down = getNthBit(*(volatile unsigned int*)REG_OFFSET(btnregs, 0), 1);
+            int left = getNthBit(*(volatile unsigned int*)REG_OFFSET(btnregs, 0), 2);
+            int right = getNthBit(*(volatile unsigned int*)REG_OFFSET(btnregs, 0), 3);
+            int up = getNthBit(*(volatile unsigned int*)REG_OFFSET(btnregs, 0), 4);
 
-            printf("Buttons: %d%d%d%d%d\n", down, left, right, up, middle);
+           // printf("Buttons: %d%d%d%d%d\n", down, left, right, up, middle);
 
             //returns button code if the btn is pressed.
               return    middle ? MIDDLE :
@@ -228,20 +260,21 @@ void run_zedBoy() {
       displayMenu(zedboyMainMenu);
 while (1)
   {
-  zedboyMainMenu->isConsoleRunning = 1;
-  endGame = 0;
-  zedboyMainMenu->isGameRunning = 0;
+      printf("outer zboy setup While loop\n");
+      zedboyMainMenu->isConsoleRunning = 1;
+      endGame = 0;
+      zedboyMainMenu->isGameRunning = 0;
 
       while ((zedboyMainMenu->isConsoleRunning) == 1)
        {
 
           progressMenu(read_btns());
-          printf("zedboy btn processed\n");
+         // printf("zedboy btn processed\n");
           usleep(1000);
 
         }
 
-        while (zedboyMainMenu->isGameRunning == 1 && !endGame)
+        while (zedboyMainMenu->isGameRunning == 1)
         {
            progressGame(read_btns());
            usleep(1000);

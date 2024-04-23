@@ -43,11 +43,11 @@ int read_PBMheader(FILE* fp, PBMheader* dest)
     // Read width and height
     assert(fscanf(fp, "%d %d", &dest->width, &dest->height) == 2);
 
-      printf("format: %s\n height: %d\n width: %d \n",
+     /*  printf("format: %s\n height: %d\n width: %d \n",
          dest->format,
          dest->height,
          dest->width);
-
+ */
 
 
 
@@ -63,11 +63,11 @@ int parse_PBMheader(PBMheader *hdr)
     return -EINVAL;
   }
 
-  printf("format: %s\n height: %d\n width: %d \n",
+ /*  printf("format: %s\n height: %d\n width: %d \n",
          hdr->format,
          hdr->height,
          hdr->width);
-
+ */
 
 
   return 0;
