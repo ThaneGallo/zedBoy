@@ -29,7 +29,6 @@ void setup()
     playerScore = 0;
     aiScore = 0;
     gameOver = 0;
-
 }
 
 int keyhit()
@@ -131,26 +130,49 @@ void logic()
     }
 }
 
+void drawScore()
+{
+
+    char playerScoreChar = '0' + playerScore;
+    char aiScoreChar = '0' + aiScore;
+
+    drawLine(WIDTH * 2 + 2, 0, WIDTH * 2 + 2, 32, 1);
+
+    drawLine(WIDTH * 2 + 2, 8, OLED_WIDTH, 8, 1);
+    drawLine(WIDTH * 2 + 2, 15, OLED_WIDTH, 15, 1);
+
+    drawLine(((WIDTH * 2 + 2) + OLED_WIDTH) / 2, 8, ((WIDTH * 2 + 2) + OLED_WIDTH) / 2, 32, 1);
+
+    drawCharacter('s', 18 + 0 + (WIDTH * 2 + 2), 1);
+    drawCharacter('c', 18 + 5 + (WIDTH * 2 + 2), 1);
+    drawCharacter('o', 18 + 10 + (WIDTH * 2 + 2), 1);
+    drawCharacter('r', 18 + 15 + (WIDTH * 2 + 2), 1);
+    drawCharacter('e', 18 + 20 + (WIDTH * 2 + 2), 1);
+    drawCharacter(':', 18 + 25 + (WIDTH * 2 + 2), 1);
+
+    drawCharacter('a', 5 + ((WIDTH * 2 + 2) + OLED_WIDTH) / 2, 9);
+    drawCharacter('i', 10 + ((WIDTH * 2 + 2) + OLED_WIDTH) / 2, 9);
+
+    drawCharacter('u', 5 + (WIDTH * 2 + 2), 9);
+    drawCharacter('s', 10 + (WIDTH * 2 + 2), 9);
+    drawCharacter('e', 15 + (WIDTH * 2 + 2), 9);
+    drawCharacter('r', 20 + (WIDTH * 2 + 2), 9);
+
+    // draws scores
+    drawCharacter(playerScoreChar, 80, 22);
+    drawCharacter(aiScoreChar, 112, 22);
+}
+
 void draw(int fd)
 {
     clearScreen(fd);
 
-    char playerScoreChar = (char)playerScore;
-    char aiScoreChar = (char)aiScore;
+    drawScore();
 
-    drawLine(WIDTH*2 + 2, 0, WIDTH*2 + 2, 32, 1);
-
-    drawLine(WIDTH*2 + 2, 8, OLED_WIDTH, 8, 1);
-    drawLine(WIDTH*2 + 2, 0, ((WIDTH*2 + 2) + OLED_WIDTH) / 2, 32, 1); 
-
-
-    // drawWord("score:", 0);
-    // drawWord(playerScore,0);
-    // drawWord(aiScore,0);
     
 
-    // Draw player paddle as a 2x2 block for each unit
-    for (int i = 0; i < 4; ++i)
+        // Draw player paddle as a 2x2 block for each unit
+        for (int i = 0; i < 4; ++i)
     {
         for (int dx = 0; dx < 2; dx++)
         {
@@ -197,7 +219,7 @@ int main()
         draw(fd);
         usleep(1000); // Game speed
 
-        if (playerScore >= 10 || aiScore >= 10)
+        if (playerScore >= 5 || aiScore >= 5)
         {
             gameOver = 1;
         }
