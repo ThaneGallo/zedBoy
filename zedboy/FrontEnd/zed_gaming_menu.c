@@ -19,6 +19,7 @@
 //include games 
 #include "../games/snake/snake.h"
 #include "../games/breakout/breakout.h"
+#include "../games/pong/pong.h"
 
 #define EXIT_GAME_SIG -4
 // example: LED GPIO Address
