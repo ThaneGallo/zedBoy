@@ -944,10 +944,10 @@ void showControls(int fd, int gameNum)
     case 3: // tetris
         drawWord("controls:", 1, 1);
         drawWord("left:", 1, 10);
-        drawWord("lbtn", 26, 10);
+        drawWord("dbtn", 26, 10);
 
         drawWord("right:", 50, 10);
-        drawWord("rbtn", 81, 10);
+        drawWord("ubtn", 81, 10);
 
         drawWord("rotate:", 1, 20);
         drawWord("mbtn", 40, 20);
