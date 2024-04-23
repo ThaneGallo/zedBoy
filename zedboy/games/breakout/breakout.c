@@ -45,45 +45,7 @@ int ball_in_motion = 0;
 int ball_dx = 1;  // ball movement direction x (1 for right, -1 for left)
 int ball_dy = -1; // ball movement direction y (-1 for up, 1 for down)
 
-// Terminal settings for non-blocking input
-struct termios orig_termios;
 
-void reset_terminal_mode()
-{
-    tcsetattr(0, TCSANOW, &orig_termios);
-}
-
-void set_conio_terminal_mode()
-{
-    struct termios new_termios;
-    tcgetattr(0, &orig_termios);
-    new_termios = orig_termios;
-    new_termios.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(0, TCSANOW, &new_termios);
-    atexit(reset_terminal_mode);
-}
-
-int kbhit()
-{
-    struct timeval tv = {0L, 0L};
-    fd_set fds;
-    FD_SET(0, &fds);
-    return select(1, &fds, NULL, NULL, &tv);
-}
-
-int getch()
-{
-    int r;
-    unsigned char c;
-    if ((r = read(0, &c, sizeof(c))) < 0)
-    {
-        return r;
-    }
-    else
-    {
-        return c;
-    }
-}
 
 void Breakout_setup()
 {
