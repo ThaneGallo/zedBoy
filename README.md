@@ -30,7 +30,7 @@ Will focus on user input through buttons and interrupts, as well as other menu f
 
 Thane Gallo (gallo.th@northeastern.edu) 
 
-Developed [kOLED.ko](../kOLED/) module to create a character device which when written to would send a buffer to fill the graphical display ram and would update the OLED screen accordingly. Also developed draw.h library for OLED device management to open, close, and write text and shapes to the graphic device ram for development of other games. Also helped move pong and tetris from their terminal implimentations and embed them within the zedBoy menu / OLED screen
+Developed [kOLED.ko](kOLED/) module to create a character device which when written to would send a buffer to fill the graphical display ram and would update the OLED screen accordingly. Also developed [draw](/zedboy/utils) library for OLED device management to open, close, and write text and shapes to the graphic device ram for development of other games. Also helped move pong and tetris from their terminal implimentations and embed them within the zedBoy menu / OLED screen
 
 
 Dmitry Matveev (matveev.d@northeastern.edu)
