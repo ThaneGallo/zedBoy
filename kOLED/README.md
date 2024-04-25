@@ -1,6 +1,6 @@
 # kOLED.ko
 
-## How to use
+## How to use:
 
 First, you must make and insert the kernel module using the following command: 
 
