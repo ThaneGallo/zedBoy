@@ -1,5 +1,7 @@
 # zedBoy
 
+####
+
 ## Abstract
 
 For our project we plan to develop a Game System for the ARM Cortex-A9 Zedboard Zynq-7000 development board. This will impliment a driver for the on-board OLED screen (ug-2832hsweg04) for setting up and drawing to the screen as well as a draw.h library for simple graphics. This libarary will be used in the development of several games such as snake, tetris, pong, and breakout and will allow for implimentation of new games as desired by the user.
