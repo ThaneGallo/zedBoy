@@ -21,7 +21,7 @@ We edit these values using the corresponding GPIO peripheral on the board and ar
 
 Next the SPI module is required to be set up and initialized as it is the only way to communicate with the OLED given the way the FPGA is set up. We need to send the set of setup commands to the OLED using the character device set up earlier depening on the state of the data/command pin. This setup is the standard setup given on the OLED screens datasheet given and allows for the entire screen to be written to.
 
-An array written to the character device is the size of the number of bytes of the GDDRAM (512). This array fills the RAM with the state of each pixel with each byte controllin 8. In order to simplify the drawing for the user a draw library is implimented.
+An array written to the character device is the size of the number of bytes of the GDDRAM (512). This array fills the RAM with the state of each pixel with each byte controlling 8. In order to simplify the drawing for the user a draw library is implimented.
 
 ### Connecting the Driver to the Userspace
 
