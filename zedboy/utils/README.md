@@ -6,7 +6,9 @@
 
 ### How to use:
 
-First, initialize the OLED screen using openOLED() this returns a file descriptor to allow the other functions to write to the OLED screens character device.
+First verify the [kOLED](../kOLED) module is inserted correctly
+
+Then, initialize the OLED screen using openOLED() this returns a file descriptor to allow the other functions to write to the OLED screens character device.
 
 Next, use any set of functions to draw shapes, text, and pixels to draw whatever is desired.
 
