@@ -1,4 +1,4 @@
-2# Utilities
+# Utilities
 
 ## displayImg.h
 
