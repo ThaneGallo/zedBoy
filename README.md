@@ -14,13 +14,13 @@ People who use the same development board will find that there is no easy way to
 We are trying to simplify the game creation process to make a system that can be modular having the ability to add games easily. 
 
 
-## System Diagram
-
-![System Diagram](<System_Diagram.png>)
-
 ## Related Work
 
 There is a similar library known as Libzed which allows for simplistic use of the functions on the development board. Some of the functionality included is GPIO accessessing and editing, hardware specific peripheral mapping information, and OLED screen implimentation. Although their implimentation is not avalible we took inspiration from the structure of availible APIs. 
+
+## System Diagram
+
+![System Diagram](<System_Diagram.png>)
 
 ## Contributions
 
@@ -30,7 +30,7 @@ Will focus on user input through buttons and interrupts, as well as other menu f
 
 Thane Gallo (gallo.th@northeastern.edu) 
 
-Developed kOLED.ko module to create a character device which when written to would send a buffer to fill the graphical display ram and would update the OLED screen accordingly. Also developed draw.h library for OLED device management to open, close, and write text and shapes to the graphic device ram for development of other games. Also helped move pong and tetris from their terminal implimentations and embed them within the zedBoy menu / OLED screen
+Developed [kOLED.ko](../kOLED/) module to create a character device which when written to would send a buffer to fill the graphical display ram and would update the OLED screen accordingly. Also developed draw.h library for OLED device management to open, close, and write text and shapes to the graphic device ram for development of other games. Also helped move pong and tetris from their terminal implimentations and embed them within the zedBoy menu / OLED screen
 
 
 Dmitry Matveev (matveev.d@northeastern.edu)
