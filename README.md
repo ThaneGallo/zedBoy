@@ -9,7 +9,7 @@ For our project we plan to develop a Game System for the ARM Cortex-A9 Zedboard 
 ## Intro
 The project is an exmaple of an embedded system. Combinining kernel space device creation with user 
 
-People who use the same development board will find that there is no easy way to interact with the OLED screen, and the similar implimentation is purely userspace and does not have any extended implimentation for the drawing API and just has a function to deaw pixels individually.
+People who use the same development board will find that there is no easy way to interact with the OLED screen, and the similar implimentation is purely userspace and does not have any extended implimentation for the drawing API and just has a function to draw pixels individually.
 
 We are trying to simplify the game creation process to make a system that can be modular having the ability to add games easily. 
 
