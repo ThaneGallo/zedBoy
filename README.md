@@ -7,7 +7,11 @@
 For our project we plan to develop a Game System for the ARM Cortex-A9 Zedboard Zynq-7000 development board. This will impliment a driver for the on-board OLED screen (ug-2832hsweg04) for setting up and drawing to the screen as well as a draw.h library for simple graphics. This libarary will be used in the development of several games such as snake, tetris, pong, and breakout and will allow for implimentation of new games as desired by the user.
 
 ## Intro
-The project is an exmaple of an embedded system. 
+The project is an exmaple of an embedded system. Combinining kernel space device creation with user 
+
+People who use the same development board will find that there is no easy way to interact with the OLED screen, and the similar implimentation is purely userspace and does not have any extended implimentation for the drawing API and just has a function to deaw pixels individually.
+
+We are trying to simplify the game creation process to make a system that can be modular having the ability to add games easily. 
 
 
 ## System Diagram
