@@ -8,7 +8,7 @@ First, you must make and insert the kernel module using the following command:
 insmod kOLED.ko
 ```
 
-Then use the draw library to open the OLED device and begin writing to the userspace buffer which allows you to draw one frame at a time. After the frame is drawn one would use sendBuffer() in order to write to the module and update the screen. 
+Then use the [draw library](../zedboy/utils/draw.h) to open the OLED device and begin writing to the userspace buffer which allows you to draw one frame at a time. After the frame is drawn one would use sendBuffer() in order to write to the module and update the screen. 
 
 ## Design
 
