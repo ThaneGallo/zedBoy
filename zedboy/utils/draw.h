@@ -7,7 +7,8 @@
 extern unsigned char buf[];
 extern int fd;
 
-
+/* @brief clears oled screen
+   @return 0 if sucessful -1 if not*/
 int clearScreen(int fd);
 
 /* @brief draws pixel
