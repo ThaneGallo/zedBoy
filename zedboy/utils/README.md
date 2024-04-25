@@ -6,7 +6,7 @@
 
 ### How to use:
 
-First verify the [kOLED](../kOLED) module is inserted correctly
+First verify the [kOLED](../../kOLED) module is inserted correctly
 
 Then, initialize the OLED screen using openOLED() this returns a file descriptor to allow the other functions to write to the OLED screens character device.
 
