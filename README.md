@@ -47,6 +47,7 @@ experience is not perfect and could be improved to create a smoother and more re
 ## Future Work
 
 In the future we would like to improve the user experience of the games. This would include improving the responsiveness of the controls and the speed of the games. An obvious extension would be to simply create more games and implement them into the zedboy application. Another improvement we could have gotten to with more time would be a more user friendly menu system that can support more games.
+
 More reach goals could include implementing a leaderboard/highscore system, adding sound effects, and adding multiplayer support to console(and implementing it in certain games).
 
 ## Experimental Results
