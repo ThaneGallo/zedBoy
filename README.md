@@ -55,7 +55,3 @@ The way the controls were implimented utilized polling of the state of the contr
   
 As each game has a very similar frame rate (4.25 frames per second) it is believed that the main slowdown for this system is the OLED screen. There are a few reasons this could be the case one is that the screen is half-duplex and between every 16 byte write to the screen another 16 bytes of meaningless data is beaing sent back to the SPI peripheral to fill the RX FIFO. This data has no purpose but must be read to prevent an RX overrun error and therefore greatly slows down transmission speed of data. This is not something that can be changed given the wiring setup of the Development board's PCB. There is however a change that can be made on the software side to increase the game speed. This would be that every frame most games clear the whole screen before writing the next frame this rewrites the whole buffer of 512 bytes rather than turning off the pixels individually and only drawing the ones that change between frames. This should make a small improvement and increase user experience.
 
-  
-## Lessons Learned
-
-
