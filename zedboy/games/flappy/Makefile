@@ -1,5 +1,5 @@
 CFLAGS = -Wall -Wextra -pedantic
-SRCS = draw.c flappy.c
+SRCS = ../../utils/draw.c ../../utils/gameConstants.c flappy.c
 OBJS = $(SRCS:.c=.o)
 TARGET = flappy
 

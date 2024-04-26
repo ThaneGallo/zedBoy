@@ -4,7 +4,9 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <time.h>
-#include "draw.h"
+
+#include "../../utils/draw.h"
+#include "../../utils/gameConstants.h"
 
 #define WIDTH 128
 #define HEIGHT 32
@@ -28,40 +30,13 @@ void setup()
     }
 }
 
-int keyhit()
+void input(int direction)
 {
-    struct termios oldt, newt;
-    int ch;
-    int oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-    newt.c_lflag &= ~(ICANON | ECHO);
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
-    ch = getchar();
-
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf);
-
-    if (ch != EOF)
+    switch (direction)
     {
-        ungetc(ch, stdin);
-        return 1;
-    }
-    return 0;
-}
-
-void input()
-{
-    if (keyhit())
-    {
-        char ch = getchar();
-        if (ch == ' ')
-        {
-            birdY -= 2; // Bird flaps and moves up
-        }
+        case UP:
+            birdY -= 2;
+            break;
     }
 }
 
