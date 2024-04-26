@@ -30,7 +30,7 @@ Worked on creating games for the zedboy application, this included [pong](/zedbo
 
 Thane Gallo (gallo.th@northeastern.edu) 
 
-Developed [kOLED.ko](kOLED/) module to create a character device which when written to would send a buffer to fill the graphical display ram and would update the OLED screen accordingly. Also developed [draw](/zedboy/utils) library for OLED device management to open, close, and write text and shapes to the graphic device ram for development of other games. Also helped move pong and tetris from their terminal implementations and embed them within the zedBoy menu / OLED screen
+Developed [kOLED.ko](kOLED/) module to create a character device which when written to would send a buffer to fill the graphical display ram and would update the OLED screen accordingly. Also developed [draw](/zedboy/utils) library for OLED device management to open, close, and write text and shapes to the graphic device ram for development of other games. Also helped move pong and tetris from their terminal implementations and embed them within the zedBoy application.
 
 
 Dmitry Matveev (matveev.d@northeastern.edu)
@@ -41,8 +41,7 @@ Sym Cunningham (sym.cunningham@gmail.com)
 
 ## Implementation Progress
 
-Overall we succeeded in creating a system that allows for easy game creation and implementation. The OLED screen was able to be controlled and the draw.h library was able to be used to draw shapes and text to the screen. The gameConstants.h file was able to be used to register games to the zedboy application. Overall we created four fully implemented and functional games, snake, pong, tetris, and breakout. The games were able to be played on the OLED screen and GPIO buttons were used to control the games. Although the user
-experience is not perfect and could be improved to create a smoother and more responsive experience, our overall project goals were met.
+Overall we succeeded in creating a system that allows for easy game creation and implementation. The OLED screen was able to be controlled and the draw.h library was able to be used to draw shapes and text to the screen. The gameConstants.h file was able to be used to register games to the zedboy application. Overall we created four fully implemented and functional games, snake, pong, tetris, and breakout. The games were able to be played on the OLED screen and GPIO buttons were used to control the games. Although the user experience is not perfect and could be improved to create a smoother and more responsive experience, our overall project goals were met.
 
 ## Future Work
 
