@@ -28,7 +28,7 @@ Jakob Brattke (brattke.j@northeastern.edu)
 
 Worked on creating games for the zedboy application, this included [pong](/zedboy/games/pong) and the not fully implemented [flappy bird](/zedboy/games/flappy). Also worked on menu controls and registering games to the zedboy application in a modular fashion, [gameConstants](/zedboy/utils).
 
-Thane Gallo (gallo.th@northeastern.edu) 
+Thane Gallo (thanegallo1@gmail.com) 
 
 Developed [kOLED.ko](kOLED/) module to create a character device which when written to would send a buffer to fill the graphical display ram and would update the OLED screen accordingly. Also developed [draw](/zedboy/utils) library for OLED device management to open, close, and write text and shapes to the graphic device ram for development of other games. Also helped move pong and tetris from their terminal implementations and embed them within the zedBoy application.
 
